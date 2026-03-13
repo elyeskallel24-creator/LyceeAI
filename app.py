@@ -14,16 +14,14 @@ gemini_key = st.secrets["GEMINI_KEY"]
 supabase = create_client(url, key)
 genai.configure(api_key=gemini_key)
 
-# SMART MODEL PICKER: This finds what YOUR key is allowed to use
 @st.cache_resource
 def get_available_model():
     try:
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 return m.name
-        return "models/gemini-1.5-flash" # Fallback
-    except:
         return "models/gemini-1.5-flash"
+    except: return "models/gemini-1.5-flash"
 
 model_name = get_available_model()
 model_gemini = genai.GenerativeModel(model_name)
@@ -32,44 +30,57 @@ model_gemini = genai.GenerativeModel(model_name)
 def load_embed_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-embed_model = load_embed_model()
-
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption(f"Connected via: {model_name}")
+st.caption(f"Knowledge Base Active | Mode: Expert Mentor")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a question about your lessons..."):
+if prompt := st.chat_input("Ask me anything about your lessons..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Searching..."):
+        with st.spinner("Consulting your Knowledge Base..."):
             try:
-                # 1. Search Knowledge Base
-                query_embedding = load_embed_model().encode(prompt).tolist()
-                result = supabase.rpc("match_documents", {
-                    "query_embedding": query_embedding,
-                    "match_threshold": 0.1,
-                    "match_count": 2
-                }).execute()
-
+                # 1. SEARCH: Only search if the question is "heavy" (not just 'hi')
                 context = ""
-                if result.data:
-                    context = "\n".join([f"Lesson: {item['content']}" for item in result.data])
+                if len(prompt) > 10: 
+                    query_embedding = load_embed_model().encode(prompt).tolist()
+                    result = supabase.rpc("match_documents", {
+                        "query_embedding": query_embedding,
+                        "match_threshold": 0.2,
+                        "match_count": 5 # Get more context
+                    }).execute()
+                    if result.data:
+                        context = "\n".join([f"[Source]: {item['content']}" for item in result.data])
+
+                # 2. THE SYSTEM BRAIN (The instructions you wanted)
+                system_instructions = f"""
+                You are the LyceeAI Mentor.
+                STRICT RULE: You only teach topics found in the provided Context.
+                If the user asks about a topic NOT in the context (like Python if it's not there), 
+                politely say: "I don't have that specific lesson in my database yet. Would you like to study [Topic A] or [Topic B] instead?"
                 
-                # 2. Generate Answer
-                full_prompt = f"Context: {context}\n\nQuestion: {prompt}"
-                response = model_gemini.generate_content(full_prompt)
+                Current Context from Database:
+                {context}
+                
+                Talk like a professional, encouraging teacher. Use the history of the chat to stay relevant.
+                """
+
+                # 3. GENERATE
+                # We send the history + the new instructions
+                chat = model_gemini.start_chat(history=[])
+                response = chat.send_message(system_instructions + "\n\nUser Question: " + prompt)
                 
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
-                st.error(f"Try one more time: {str(e)}")
+                st.error(f"Mentor Error: {str(e)}")
