@@ -2,7 +2,6 @@ import streamlit as st
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import requests
-import json
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
@@ -18,8 +17,8 @@ supabase = create_client(url, key)
 def load_embed():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- TOGETHER.AI FUNCTION (The new engine) ---
-def ask_llm(system_prompt, user_prompt):
+# --- TOGETHER.AI ENGINE WITH MEMORY ---
+def ask_llm(messages):
     endpoint = "https://api.together.xyz/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {together_key}",
@@ -27,31 +26,34 @@ def ask_llm(system_prompt, user_prompt):
     }
     data = {
         "model": "meta-llama/Llama-3-70b-chat-hf",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
+        "messages": messages,
         "temperature": 0.7,
         "max_tokens": 1024
     }
-    response = requests.post(endpoint, headers=headers, json=data)
-    return response.json()['choices'][0]['message']['content']
+    try:
+        response = requests.post(endpoint, headers=headers, json=data, timeout=15)
+        return response.json()['choices'][0]['message']['content']
+    except Exception as e:
+        return f"Error: The AI engine is currently rebooting. Please try again in 10 seconds."
 
-# --- SIDEBAR (Still here and better!) ---
+# --- SIDEBAR (The Founder's Hub) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
-    st.success("Engine: Together.ai (Llama 3)")
+    st.success("Engine: Llama-3 (High-Speed)")
     
-    if st.button("🔍 Audit Data"):
+    if st.button("🔍 Audit Knowledge Base"):
         res = supabase.table("documents").select("content").limit(3).execute()
         for item in res.data:
             st.info(f"Chunk: {item['content'][:150]}...")
+    
+    if st.button("🗑 Clear My Chat"):
+        st.session_state.messages = []
+        st.rerun()
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption("24/7 High-Speed Access Enabled")
+st.caption("24/7 High-Speed Mentor Enabled")
 
-# Initialize isolated chat history for each user
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -60,7 +62,8 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask about your lessons..."):
+if prompt := st.chat_input("Ask a question about your lessons..."):
+    # Add user message to state
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -72,24 +75,26 @@ if prompt := st.chat_input("Ask about your lessons..."):
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
-                    "match_threshold": 0.15, 
-                    "match_count": 5 
+                    "match_threshold": 0.1, # Lowered to catch more relevant content
+                    "match_count": 4 
                 }).execute()
                 
-                context = "\n".join([item['content'] for item in result.data]) if result.data else "No context found."
+                context = "\n".join([item['content'] for item in result.data]) if result.data else "No specific lesson found."
 
-                # 2. GENERATE
-                system_instructions = f"""
-                You are LyceeAI, a mentor for the Tunisian Baccalaureate.
-                USE THIS CONTEXT TO ANSWER: {context}
+                # 2. PREPARE PROMPT WITH MEMORY
+                system_message = {
+                    "role": "system", 
+                    "content": f"You are LyceeAI, a mentor for Tunisian Baccalaureate students. Use this context: {context}. Be encouraging and professional."
+                }
                 
-                If the user says 'Hello', greet them warmly and ask which subject they want to study.
-                If they ask 'what subjects', analyze the context and list what you see (e.g. English, SVT).
-                """
+                # We send the last 5 messages + the system instructions for memory
+                chat_history = [system_message] + st.session_state.messages[-5:]
                 
-                response_text = ask_llm(system_instructions, prompt)
+                # 3. GENERATE
+                response_text = ask_llm(chat_history)
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
+                
             except Exception as e:
-                st.error("Engine busy. Please try again in a moment.")
+                st.error("I hit a small snag. Let's try that question again!")
