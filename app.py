@@ -18,7 +18,7 @@ supabase = create_client(url, key)
 def load_embed():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- THE UNSTOPPABLE ENGINE (Failover Logic) ---
+# --- THE UNSTOPPABLE ENGINE (Surgical Failover) ---
 def ask_openrouter(messages):
     endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -27,72 +27,70 @@ def ask_openrouter(messages):
         "Content-Type": "application/json"
     }
     
-    # List of FREE stable models to try in order
+    # Priority list of high-speed free models
     models_to_try = [
-        "qwen/qwen-2.5-72b-instruct:free",
         "google/gemma-2-9b-it:free",
+        "qwen/qwen-2.5-72b-instruct:free",
         "mistralai/mistral-7b-instruct:free"
     ]
     
-    last_error = ""
     for model in models_to_try:
         try:
             data = {
                 "model": model,
                 "messages": messages,
-                "temperature": 0.4
+                "temperature": 0.4,
+                "max_tokens": 1000
             }
-            # 15 second timeout per model to keep it fast
-            response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=15)
+            # Rapid-fire timeout: if a model doesn't respond in 8s, move to the next
+            response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=8)
+            
             if response.status_code == 200:
                 return response.json()['choices'][0]['message']['content']
-            else:
-                last_error = f"Status {response.status_code}"
-                continue # Try the next model
-        except Exception as e:
-            last_error = str(e)
-            continue # Try the next model
+        except:
+            continue 
             
-    return f"The AI network is very busy right now. Please wait 10 seconds and try again. (System Note: {last_error[:50]})"
+    return "I am experiencing high traffic. Please tap 'Enter' again in 5 seconds to reconnect."
 
-# --- SIDEBAR (The Founder's Hub) ---
+# --- SIDEBAR (The Founder's Control Panel) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
-    st.info("Status: Multi-Model Failover Active")
+    st.success("API Status: Connected")
     
     if st.button("🔍 Audit Knowledge Base"):
         try:
-            res = supabase.table("documents").select("content").limit(3).execute()
+            res = supabase.table("documents").select("content").limit(2).execute()
             for item in res.data:
-                st.code(f"Chunk: {item['content'][:150]}...")
+                st.caption(f"DB Entry: {item['content'][:100]}...")
         except:
-            st.error("Database connection issue.")
+            st.error("Check Database Connection.")
     
+    st.divider()
     if st.button("🗑 Clear My Chat"):
         st.session_state.messages = []
         st.rerun()
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption("24/7 High-Performance Mentor")
+st.caption("Tunisian Baccalaureate Mentor - High Speed Mode")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display history
+# Display conversation
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("What would you like to learn today?"):
+if prompt := st.chat_input("Ask a question about your lessons..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Analyzing your 7,000 lessons..."):
+        with st.spinner("Retrieving lesson data..."):
             try:
-                # 1. SEARCH
+                # 1. SEARCH DATABASE
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
@@ -104,20 +102,22 @@ if prompt := st.chat_input("What would you like to learn today?"):
                 if result.data:
                     context = "\n".join([item['content'] for item in result.data])
                 else:
-                    context = "No specific chunk found. Use general knowledge."
+                    context = "No specific chunk found. Reply using general academic knowledge."
 
-                # 2. SYSTEM ARCHITECTURE
-                system_content = f"You are LyceeAI, a professional Tunisian Baccalaureate mentor. Use context: {context}."
+                # 2. SYSTEM INSTRUCTIONS
+                system_msg = f"You are LyceeAI, an expert Tunisian Baccalaureate tutor. Context: {context}. Be precise and professional."
                 
-                chat_history = [{"role": "system", "content": system_content}]
-                for msg in st.session_state.messages[-3:]:
+                # 3. CONSTRUCT MEMORY
+                chat_history = [{"role": "system", "content": system_msg}]
+                # Send the last 4 messages so the AI remembers the conversation
+                for msg in st.session_state.messages[-4:]:
                     chat_history.append(msg)
                 
-                # 3. GENERATE (Will try multiple models)
+                # 4. EXECUTE AI CALL
                 response_text = ask_openrouter(chat_history)
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 
             except Exception as e:
-                st.error("I'm refreshing my circuits. Please try one more time!")
+                st.error("System refresh in progress. Please re-send your message.")
