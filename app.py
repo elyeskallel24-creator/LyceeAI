@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
+import time
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
@@ -20,71 +21,82 @@ def get_model():
         if 'generateContent' in m.supported_generation_methods: return m.name
     return "models/gemini-1.5-flash"
 
-model_gemini = genai.GenerativeModel(get_model())
+model_name = get_model()
+model_gemini = genai.GenerativeModel(model_name)
 
 @st.cache_resource
 def load_embed(): return SentenceTransformer('all-MiniLM-L6-v2')
 
+# --- FOUNDER TOOLS SIDEBAR ---
+with st.sidebar:
+    st.header("🛠 Founder Tools")
+    st.info(f"Model: {model_name}")
+    
+    if st.button("🔍 Audit Data"):
+        test_res = supabase.table("documents").select("content").limit(5).execute()
+        for i, item in enumerate(test_res.data):
+            st.text_area(f"Chunk {i+1}", item['content'][:200], height=100)
+            
+    if st.button("📋 Refresh Subject Map"):
+        with st.spinner("Scanning database..."):
+            # Pulling a diverse sample from the 7000 chunks
+            sample = supabase.table("documents").select("content").limit(15).execute()
+            sample_text = "\n".join([d['content'] for d in sample.data])
+            try:
+                res = model_gemini.generate_content(f"Analyze these snippets and list the 3 primary academic subjects found (e.g., Biology, English, etc.):\n{sample_text}")
+                st.session_state.detected_subjects = res.text
+                st.success("Subjects updated!")
+            except Exception as e:
+                st.error("API is busy. Wait 30 seconds.")
+
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
+if "detected_subjects" in st.session_state:
+    st.caption(f"Knowledge Base: {st.session_state.detected_subjects[:100]}...")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# --- FOUNDER TOOLS SIDEBAR ---
-with st.sidebar:
-    st.header("🛠 Founder Tools")
-    if st.button("🔍 Audit: What's inside?"):
-        # Pulling chunks to see the diversity of the 7000 files
-        test_res = supabase.table("documents").select("content").limit(10).execute()
-        for i, item in enumerate(test_res.data):
-            st.info(f"Chunk {i+1}: {item['content'][:150]}...")
-            
-    if st.button("📋 List Detected Topics"):
-        st.write("Asking AI to summarize the database...")
-        # We pull 20 random chunks to give the AI a 'sample' of the whole drive
-        sample = supabase.table("documents").select("content").limit(20).execute()
-        sample_text = "\n".join([d['content'] for d in sample.data])
-        res = model_gemini.generate_content(f"Based on these snippets, what are the 3 main academic subjects here? \n{sample_text}")
-        st.success(res.text)
-
-# Display chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]): st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a specific question (e.g., 'Tell me about SVT')"):
+if prompt := st.chat_input("Ask about your lessons..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"): st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Filtering Knowledge Base..."):
-            # 1. SEARCH with higher count to get past the 'noise'
-            query_embedding = load_embed().encode(prompt).tolist()
-            result = supabase.rpc("match_documents", {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.15, 
-                "match_count": 8 # Increased to find real lessons hidden under 'noise'
-            }).execute()
-            
-            context = ""
-            if result.data:
-                # We filter out very short 'noisy' chunks
-                context = "\n".join([f"LESSON DATA: {item['content']}" for item in result.data if len(item['content']) > 50])
+        with st.spinner("Mentor is thinking..."):
+            try:
+                # 1. SEARCH
+                query_embedding = load_embed().encode(prompt).tolist()
+                result = supabase.rpc("match_documents", {
+                    "query_embedding": query_embedding,
+                    "match_threshold": 0.12, 
+                    "match_count": 6 
+                }).execute()
+                
+                context = ""
+                if result.data:
+                    context = "\n".join([item['content'] for item in result.data if len(item['content']) > 40])
 
-            # 2. THE MENTOR SYSTEM
-            system_prompt = f"""
-            You are the LyceeAI Mentor. 
-            CONTEXT: {context}
-            
-            YOUR GOAL: 
-            - Be a supportive academic tutor.
-            - If the user says 'Hello', greet them and ask what academic subject (SVT, Physics, English, etc.) they want to study.
-            - If the context contains grammar exercises, treat them as 'English Lessons'.
-            - If the context contains Biology/SVT, treat them as 'SVT Lessons'.
-            - IMPORTANT: If you don't find a topic, ask the user: 'Which specific chapter from your 7000 lessons should we open today?'
-            """
-            
-            chat = model_gemini.start_chat(history=[])
-            response = chat.send_message(system_prompt + "\n\nUser: " + prompt)
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+                # 2. SYSTEM BRAIN
+                system_prompt = f"""
+                You are LyceeAI, a mentor for the Tunisian Baccalaureate.
+                CONTEXT FROM DATABASE: {context}
+                
+                MISSION:
+                - Use the context to teach. 
+                - If the user asks for 'subjects', list the ones found in the context (like English or SVT).
+                - If you can't find the answer in the context, say: 'I have 7000 chunks of data, but I couldn't find that specific detail. Can you rephrase or ask about another topic like SVT?'
+                """
+                
+                # 3. GENERATE (With history)
+                response = model_gemini.generate_content(system_prompt + "\n\nUser: " + prompt)
+                
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+            except Exception as e:
+                if "429" in str(e):
+                    st.error("The API key is 'tired'. Please wait 60 seconds for the free tier to reset.")
+                else:
+                    st.error(f"Error: {str(e)}")
