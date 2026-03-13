@@ -1,7 +1,8 @@
 import streamlit as st
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
-import google.generativeai as genai
+import requests
+import json
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
@@ -9,81 +10,86 @@ st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
 # --- DATABASE & AI SETUP ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
-gemini_key = st.secrets["GEMINI_KEY"]
+together_key = st.secrets["TOGETHER_API_KEY"]
 
 supabase = create_client(url, key)
-genai.configure(api_key=gemini_key)
 
 @st.cache_resource
-def get_model():
-    try:
-        for m in genai.list_models():
-            if 'generateContent' in m.supported_generation_methods: return m.name
-        return "models/gemini-1.5-flash"
-    except: return "models/gemini-1.5-flash"
+def load_embed():
+    return SentenceTransformer('all-MiniLM-L6-v2')
 
-model_name = get_model()
-model_gemini = genai.GenerativeModel(model_name)
+# --- TOGETHER.AI FUNCTION (The new engine) ---
+def ask_llm(system_prompt, user_prompt):
+    endpoint = "https://api.together.xyz/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {together_key}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "model": "meta-llama/Llama-3-70b-chat-hf",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 1024
+    }
+    response = requests.post(endpoint, headers=headers, json=data)
+    return response.json()['choices'][0]['message']['content']
 
-@st.cache_resource
-def load_embed(): return SentenceTransformer('all-MiniLM-L6-v2')
-
-# --- FOUNDER TOOLS SIDEBAR ---
+# --- SIDEBAR (Still here and better!) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
+    st.success("Engine: Together.ai (Llama 3)")
     
-    if st.button("🔍 Quick Audit"):
-        # Pulling very small snippets to save tokens
-        test_res = supabase.table("documents").select("content").limit(3).execute()
-        for item in test_res.data:
-            st.code(item['content'][:100] + "...")
-            
-    if st.button("📋 Identify Subjects"):
-        with st.spinner("Quick Scan..."):
-            # We only pull 5 snippets now (much lighter on the API)
-            sample = supabase.table("documents").select("content").limit(5).execute()
-            sample_text = "\n".join([d['content'] for d in sample.data])
-            try:
-                # Short, simple prompt to keep tokens low
-                res = model_gemini.generate_content(f"List 2-3 subjects found in this text: {sample_text}")
-                st.session_state.subjects = res.text
-                st.success("Detected!")
-            except:
-                st.warning("API still busy. Try the chat instead.")
+    if st.button("🔍 Audit Data"):
+        res = supabase.table("documents").select("content").limit(3).execute()
+        for item in res.data:
+            st.info(f"Chunk: {item['content'][:150]}...")
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-if "subjects" in st.session_state:
-    st.caption(f"Subjects: {st.session_state.subjects}")
+st.caption("24/7 High-Speed Access Enabled")
 
+# Initialize isolated chat history for each user
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# Display history
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]): st.markdown(message["content"])
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a question..."):
+if prompt := st.chat_input("Ask about your lessons..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"): st.markdown(prompt)
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        try:
-            # 1. SEARCH (Reduced match count to save resources)
-            query_embedding = load_embed().encode(prompt).tolist()
-            result = supabase.rpc("match_documents", {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.15, 
-                "match_count": 3 
-            }).execute()
-            
-            context = ""
-            if result.data:
-                context = "\n".join([item['content'] for item in result.data])
+        with st.spinner("Sourcing Knowledge Base..."):
+            try:
+                # 1. SEARCH
+                query_vec = load_embed().encode(prompt).tolist()
+                result = supabase.rpc("match_documents", {
+                    "query_embedding": query_vec,
+                    "match_threshold": 0.15, 
+                    "match_count": 5 
+                }).execute()
+                
+                context = "\n".join([item['content'] for item in result.data]) if result.data else "No context found."
 
-            # 2. SYSTEM BRAIN (Minimalist to avoid hitting limits)
-            response = model_gemini.generate_content(f"Context: {context}\n\nUser: {prompt}")
-            
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
-        except Exception as e:
-            st.error("The AI is resting. Please wait 1 minute before your next question.")
+                # 2. GENERATE
+                system_instructions = f"""
+                You are LyceeAI, a mentor for the Tunisian Baccalaureate.
+                USE THIS CONTEXT TO ANSWER: {context}
+                
+                If the user says 'Hello', greet them warmly and ask which subject they want to study.
+                If they ask 'what subjects', analyze the context and list what you see (e.g. English, SVT).
+                """
+                
+                response_text = ask_llm(system_instructions, prompt)
+                
+                st.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
+            except Exception as e:
+                st.error("Engine busy. Please try again in a moment.")
