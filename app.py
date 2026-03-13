@@ -25,7 +25,7 @@ supabase = create_client(url, key)
 genai.configure(api_key=gemini_key)
 
 # Updated to the 2026 stable production model
-model_gemini = genai.GenerativeModel('gemini-2.0-flash')
+model_gemini = genai.GenerativeModel('gemini-1.5-flash')
 
 @st.cache_resource
 def load_model():
