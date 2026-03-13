@@ -2,6 +2,7 @@ import streamlit as st
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import requests
+import json
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
@@ -9,7 +10,7 @@ st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
 # --- DATABASE & AI SETUP ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
-together_key = st.secrets["TOGETHER_API_KEY"]
+openrouter_key = st.secrets["OPENROUTER_API_KEY"]
 
 supabase = create_client(url, key)
 
@@ -17,29 +18,33 @@ supabase = create_client(url, key)
 def load_embed():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- TOGETHER.AI ENGINE WITH MEMORY ---
-def ask_llm(messages):
-    endpoint = "https://api.together.xyz/v1/chat/completions"
+# --- OPENROUTER ENGINE (The Unstoppable Engine) ---
+def ask_openrouter(messages):
+    endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {together_key}",
+        "Authorization": f"Bearer {openrouter_key}",
+        "HTTP-Referer": "https://lyceeai.streamlit.app", # Required by OpenRouter
         "Content-Type": "application/json"
     }
+    
+    # Using a high-performance FREE model
     data = {
-        "model": "meta-llama/Llama-3-70b-chat-hf",
+        "model": "mistralai/mistral-7b-instruct:free", 
         "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 1024
+        "temperature": 0.7
     }
+    
     try:
-        response = requests.post(endpoint, headers=headers, json=data, timeout=15)
+        response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=20)
+        response.raise_for_status()
         return response.json()['choices'][0]['message']['content']
     except Exception as e:
-        return f"Error: The AI engine is currently rebooting. Please try again in 10 seconds."
+        return f"AI is briefly recalibrating. Just wait 5 seconds and try your question again! (Error: {str(e)[:50]})"
 
-# --- SIDEBAR (The Founder's Hub) ---
+# --- SIDEBAR (The Hub) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
-    st.success("Engine: Llama-3 (High-Speed)")
+    st.success("Engine: OpenRouter (Free Tier)")
     
     if st.button("🔍 Audit Knowledge Base"):
         res = supabase.table("documents").select("content").limit(3).execute()
@@ -52,7 +57,7 @@ with st.sidebar:
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption("24/7 High-Speed Mentor Enabled")
+st.caption("Free, Unlimited High-Speed Learning")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -63,38 +68,36 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 if prompt := st.chat_input("Ask a question about your lessons..."):
-    # Add user message to state
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Sourcing Knowledge Base..."):
+        with st.spinner("Consulting your database..."):
             try:
                 # 1. SEARCH
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
-                    "match_threshold": 0.1, # Lowered to catch more relevant content
+                    "match_threshold": 0.1,
                     "match_count": 4 
                 }).execute()
                 
                 context = "\n".join([item['content'] for item in result.data]) if result.data else "No specific lesson found."
 
                 # 2. PREPARE PROMPT WITH MEMORY
-                system_message = {
-                    "role": "system", 
-                    "content": f"You are LyceeAI, a mentor for Tunisian Baccalaureate students. Use this context: {context}. Be encouraging and professional."
-                }
+                system_content = f"You are LyceeAI, a professional mentor for the Tunisian Baccalaureate. Use this lesson context: {context}. Keep answers helpful and structured."
                 
-                # We send the last 5 messages + the system instructions for memory
-                chat_history = [system_message] + st.session_state.messages[-5:]
+                # Format for OpenRouter
+                chat_history = [{"role": "system", "content": system_content}]
+                for msg in st.session_state.messages[-5:]:
+                    chat_history.append(msg)
                 
                 # 3. GENERATE
-                response_text = ask_llm(chat_history)
+                response_text = ask_openrouter(chat_history)
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 
             except Exception as e:
-                st.error("I hit a small snag. Let's try that question again!")
+                st.error("Connection hiccup! One more try should do it.")
