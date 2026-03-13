@@ -3,10 +3,9 @@ from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import google.generativeai as genai
 
-# --- PAGE CONFIG (The "Modern" Look) ---
+# --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
 
-# Custom CSS for a minimalist "Tech-Corporate" feel
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -16,7 +15,6 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- DATABASE & AI SETUP ---
-# We use st.secrets to keep your keys hidden from hackers
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 gemini_key = st.secrets["GEMINI_KEY"]
@@ -24,8 +22,11 @@ gemini_key = st.secrets["GEMINI_KEY"]
 supabase = create_client(url, key)
 genai.configure(api_key=gemini_key)
 
-# Updated to the 2026 stable production model
-model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+# We use 'gemini-pro' as a fallback because it is the most widely supported name
+try:
+    model_gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
+except:
+    model_gemini = genai.GenerativeModel('gemini-pro')
 
 @st.cache_resource
 def load_model():
@@ -40,35 +41,35 @@ st.caption("Advanced AI Tutor for Baccalauréat SVT")
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Chat Input
 if prompt := st.chat_input("Ask a question about your lessons..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Consulting knowledge base..."):
+        with st.spinner("Analyzing lesson data..."):
             try:
                 # 1. Search Knowledge Base
                 query_embedding = embed_model.encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_embedding,
-                    "match_threshold": 0.3,
+                    "match_threshold": 0.2, # Lowered threshold to find more results
                     "match_count": 3
                 }).execute()
 
-                context = "\n".join([f"Lesson snippet: {item['content']}" for item in result.data])
+                context = ""
+                if result.data:
+                    context = "\n".join([f"Lesson snippet: {item['content']}" for item in result.data])
                 
                 # 2. Generate Answer
-                ai_prompt = f"You are a professional tutor for the Tunisian Baccalaureate. Use the provided context to answer. If the context doesn't contain the answer, use your knowledge but stay relevant to the SVT curriculum. Context: {context}\n\nQuestion: {prompt}"
-                response = model_gemini.generate_content(ai_prompt)
+                full_prompt = f"You are a professional SVT tutor. Use this context: {context}\n\nQuestion: {prompt}"
+                response = model_gemini.generate_content(full_prompt)
                 
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
+                st.error(f"Technical error: {str(e)}")
