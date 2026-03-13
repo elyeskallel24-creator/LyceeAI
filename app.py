@@ -22,11 +22,8 @@ gemini_key = st.secrets["GEMINI_KEY"]
 supabase = create_client(url, key)
 genai.configure(api_key=gemini_key)
 
-# We use 'gemini-pro' as a fallback because it is the most widely supported name
-try:
-    model_gemini = genai.GenerativeModel('gemini-1.5-flash-latest')
-except:
-    model_gemini = genai.GenerativeModel('gemini-pro')
+# Using the most widely compatible model name for Free Tier
+model_gemini = genai.GenerativeModel('gemini-pro')
 
 @st.cache_resource
 def load_model():
@@ -57,13 +54,13 @@ if prompt := st.chat_input("Ask a question about your lessons..."):
                 query_embedding = embed_model.encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_embedding,
-                    "match_threshold": 0.2, # Lowered threshold to find more results
-                    "match_count": 3
+                    "match_threshold": 0.1, # Lowest possible threshold to ensure WE GET SOMETHING
+                    "match_count": 2
                 }).execute()
 
                 context = ""
                 if result.data:
-                    context = "\n".join([f"Lesson snippet: {item['content']}" for item in result.data])
+                    context = "\n".join([f"Lesson content: {item['content']}" for item in result.data])
                 
                 # 2. Generate Answer
                 full_prompt = f"You are a professional SVT tutor. Use this context: {context}\n\nQuestion: {prompt}"
@@ -72,4 +69,5 @@ if prompt := st.chat_input("Ask a question about your lessons..."):
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
-                st.error(f"Technical error: {str(e)}")
+                # If even gemini-pro fails, we will know exactly why
+                st.error(f"AI Service Alert: {str(e)}")
