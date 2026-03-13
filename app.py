@@ -23,7 +23,9 @@ gemini_key = st.secrets["GEMINI_KEY"]
 
 supabase = create_client(url, key)
 genai.configure(api_key=gemini_key)
-model_gemini = genai.GenerativeModel('gemini-1.5-flash')
+
+# Updated to the 2026 stable production model
+model_gemini = genai.GenerativeModel('gemini-2.0-flash')
 
 @st.cache_resource
 def load_model():
@@ -51,19 +53,22 @@ if prompt := st.chat_input("Ask a question about your lessons..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Consulting knowledge base..."):
-            # 1. Search Knowledge Base
-            query_embedding = embed_model.encode(prompt).tolist()
-            result = supabase.rpc("match_documents", {
-                "query_embedding": query_embedding,
-                "match_threshold": 0.3,
-                "match_count": 3
-            }).execute()
+            try:
+                # 1. Search Knowledge Base
+                query_embedding = embed_model.encode(prompt).tolist()
+                result = supabase.rpc("match_documents", {
+                    "query_embedding": query_embedding,
+                    "match_threshold": 0.3,
+                    "match_count": 3
+                }).execute()
 
-            context = "\n".join([f"Lesson: {item['content']}" for item in result.data])
-            
-            # 2. Generate Answer
-            ai_prompt = f"You are a professional tutor. Use the context to answer. Context: {context}\n\nQuestion: {prompt}"
-            response = model_gemini.generate_content(ai_prompt)
-            
-            st.markdown(response.text)
-            st.session_state.messages.append({"role": "assistant", "content": response.text})
+                context = "\n".join([f"Lesson snippet: {item['content']}" for item in result.data])
+                
+                # 2. Generate Answer
+                ai_prompt = f"You are a professional tutor for the Tunisian Baccalaureate. Use the provided context to answer. If the context doesn't contain the answer, use your knowledge but stay relevant to the SVT curriculum. Context: {context}\n\nQuestion: {prompt}"
+                response = model_gemini.generate_content(ai_prompt)
+                
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}")
