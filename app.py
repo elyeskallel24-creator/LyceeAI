@@ -13,7 +13,7 @@ st.markdown("""
     .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #0057B8; color: white; }
     .stTextInput>div>div>input { border-radius: 5px; }
     </style>
-    """, unsafe_allow_status_code=True)
+    """, unsafe_allow_html=True)
 
 # --- DATABASE & AI SETUP ---
 # We use st.secrets to keep your keys hidden from hackers
