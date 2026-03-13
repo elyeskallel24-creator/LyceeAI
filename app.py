@@ -30,55 +30,69 @@ model_gemini = genai.GenerativeModel(model_name)
 def load_embed_model():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
+# --- THE "MAP OF THE HOUSE" (Edit this list with your actual subjects!) ---
+# This ensures the AI always knows what it has, even if a search fails.
+CURRICULUM_MAP = """
+You have access to the following major subjects and chapters:
+1. Biology (SVT): Neurophysiology, Immunology, Genetics, Evolution.
+2. Technology & Coding: Python Basics, AI Automation.
+3. [Add your other major subjects here...]
+"""
+
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption(f"Knowledge Base Active | Mode: Expert Mentor")
+st.caption("Status: Expert Mentor Online")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask me anything about your lessons..."):
+if prompt := st.chat_input("What would you like to study today?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Consulting your Knowledge Base..."):
+        with st.spinner("Consulting Mentor..."):
             try:
-                # 1. SEARCH: Only search if the question is "heavy" (not just 'hi')
-                context = ""
-                if len(prompt) > 10: 
+                # 1. SMART SEARCH
+                # We only search the database if they ask a specific question
+                context_info = ""
+                is_greeting = any(word in prompt.lower() for word in ["hello", "hi", "hey", "salut"])
+                
+                if not is_greeting:
                     query_embedding = load_embed_model().encode(prompt).tolist()
                     result = supabase.rpc("match_documents", {
                         "query_embedding": query_embedding,
                         "match_threshold": 0.2,
-                        "match_count": 5 # Get more context
+                        "match_count": 5
                     }).execute()
                     if result.data:
-                        context = "\n".join([f"[Source]: {item['content']}" for item in result.data])
+                        context_info = "\n".join([item['content'] for item in result.data])
 
-                # 2. THE SYSTEM BRAIN (The instructions you wanted)
-                system_instructions = f"""
-                You are the LyceeAI Mentor.
-                STRICT RULE: You only teach topics found in the provided Context.
-                If the user asks about a topic NOT in the context (like Python if it's not there), 
-                politely say: "I don't have that specific lesson in my database yet. Would you like to study [Topic A] or [Topic B] instead?"
+                # 2. SYSTEM INSTRUCTIONS (The Fix)
+                system_prompt = f"""
+                You are LyceeAI, a professional and organic Mentor for students.
                 
-                Current Context from Database:
-                {context}
+                YOUR KNOWLEDGE BASE MAP:
+                {CURRICULUM_MAP}
+
+                BEHAVIOR RULES:
+                1. If the user says 'Hello', GREET them warmly and ASK which subject or chapter they want to focus on today. 
+                2. NEVER say your database is empty. You know you have {CURRICULUM_MAP}.
+                3. If the user asks 'What do you know?', list the Subjects and Chapters from the MAP above in a clean, professional way.
+                4. Use the 'Context Info' below ONLY to provide specific details for teaching.
                 
-                Talk like a professional, encouraging teacher. Use the history of the chat to stay relevant.
+                CONTEXT INFO FROM DATABASE SEARCH:
+                {context_info}
                 """
 
-                # 3. GENERATE
-                # We send the history + the new instructions
+                # 3. CONVERSATION
                 chat = model_gemini.start_chat(history=[])
-                response = chat.send_message(system_instructions + "\n\nUser Question: " + prompt)
+                response = chat.send_message(system_prompt + "\n\nUser: " + prompt)
                 
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
