@@ -3,14 +3,19 @@ from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import requests
 import json
+import time
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
 
 # --- DATABASE & AI SETUP ---
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-openrouter_key = st.secrets["OPENROUTER_API_KEY"]
+try:
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+    openrouter_key = st.secrets["OPENROUTER_API_KEY"]
+except Exception as e:
+    st.error("Secrets are missing. Please check your Streamlit Cloud settings.")
+    st.stop()
 
 supabase = create_client(url, key)
 
@@ -18,7 +23,7 @@ supabase = create_client(url, key)
 def load_embed():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- THE HARDCORE ENGINE (High-Volume Stable Mode) ---
+# --- THE AUTO-ROUTER ENGINE (Infinite Reliability) ---
 def ask_openrouter(messages):
     endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -27,32 +32,34 @@ def ask_openrouter(messages):
         "Content-Type": "application/json"
     }
     
-    # Surgical Choice: Gemini Flash 1.5 8B is the most stable "high-volume" free model
+    # Using 'openrouter/auto' - This automatically picks the best working model
     data = {
-        "model": "google/gemini-flash-1.5-8b:free",
+        "model": "openrouter/auto",
         "messages": messages,
         "temperature": 0.4
     }
     
-    try:
-        # Increased timeout to 60s so 10 users don't get cut off during peak lag
-        response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=60)
-        
-        if response.status_code == 200:
-            return response.json()['choices'][0]['message']['content']
-        else:
-            # Fallback to another hyper-fast model if Gemini is truly down
-            data["model"] = "meta-llama/llama-3.2-3b-instruct:free"
-            response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=60)
-            return response.json()['choices'][0]['message']['content']
+    # We will try 3 times automatically before giving up
+    for attempt in range(3):
+        try:
+            response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=45)
+            if response.status_code == 200:
+                return response.json()['choices'][0]['message']['content']
+            elif response.status_code == 401:
+                return "Error: Your API Key is invalid or hasn't updated yet. Please wait 5 minutes."
+            else:
+                time.sleep(2) # Wait 2 seconds before retrying
+                continue
+        except:
+            time.sleep(2)
+            continue
             
-    except Exception as e:
-        return "The AI is processing a lot of data right now. Please wait 10 seconds and try again."
+    return "The system is warming up for your 10 users. Please try one more time!"
 
-# --- SIDEBAR (The Founder's Hub) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
-    st.success("High-Capacity Mode: ON")
+    st.info("Mode: Auto-Routing (High Uptime)")
     
     if st.button("🔍 Audit Knowledge Base"):
         try:
@@ -69,23 +76,22 @@ with st.sidebar:
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption("24/7 High-Capacity Mentor for Baccalauréat")
+st.caption("Active Mentor for Tunisian Baccalaureate")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display conversation
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a question about your lessons..."):
+if prompt := st.chat_input("Ask a question..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Sourcing data for your team..."):
+        with st.spinner("Finding the best AI for you..."):
             try:
                 # 1. SEARCH
                 query_vec = load_embed().encode(prompt).tolist()
@@ -95,21 +101,20 @@ if prompt := st.chat_input("Ask a question about your lessons..."):
                     "match_count": 3 
                 }).execute()
                 
-                context = "\n".join([item['content'] for item in result.data]) if result.data else "General knowledge."
+                context = "\n".join([item['content'] for item in result.data]) if result.data else "General academic knowledge."
 
-                # 2. SYSTEM INSTRUCTIONS
-                system_msg = f"You are LyceeAI, a mentor for the Tunisian Baccalaureate. Context: {context}."
+                # 2. SYSTEM
+                system_msg = f"You are LyceeAI, a professional tutor. Use context: {context}."
                 
-                # 3. CONSTRUCT MEMORY
                 chat_history = [{"role": "system", "content": system_msg}]
                 for msg in st.session_state.messages[-3:]:
                     chat_history.append(msg)
                 
-                # 4. EXECUTE
+                # 3. GENERATE
                 response_text = ask_openrouter(chat_history)
                 
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 
             except Exception as e:
-                st.error("Wait 5 seconds and resend your message.")
+                st.error("System is busy. Please resend.")
