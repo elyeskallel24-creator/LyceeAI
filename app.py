@@ -5,7 +5,7 @@ import requests
 import json
 import time
 from io import BytesIO
-import pypdf # Make sure to add pypdf to your requirements.txt
+import pypdf
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide")
@@ -36,7 +36,7 @@ if "user" not in st.session_state:
 if "step" not in st.session_state:
     st.session_state.step = "auth"
 
-# --- ONBOARDING (Fixed Version) ---
+# --- ONBOARDING ---
 def onboarding():
     st.header("🎯 Personnalisez votre expérience")
     level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"])
@@ -47,7 +47,7 @@ def onboarding():
         section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
 
     st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)")
-    method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis pour de meilleurs résultats.")
+    method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis.")
     
     char_count = len(method)
     st.caption(f"Caractères: {char_count}/150")
@@ -55,7 +55,8 @@ def onboarding():
     if st.button("Finaliser l'inscription"):
         if 80 <= char_count <= 150:
             user_data = {
-                **st.session_state.temp_user,
+                "username": st.session_state.temp_user["username"],
+                "password": st.session_state.temp_user["password"],
                 "level": level,
                 "section": section,
                 "teaching_method": method
@@ -64,39 +65,36 @@ def onboarding():
                 supabase.table("users_profile").insert(user_data).execute()
                 st.session_state.user = user_data
                 st.session_state.step = "chat"
-                st.success("Compte créé avec succès!")
+                st.success("Compte créé !")
                 st.rerun()
             except Exception as e:
-                st.error(f"Erreur lors de la création: {e}")
+                st.error(f"Erreur: {e}")
         else:
-            st.warning(f"Votre description fait {char_count} caractères. Elle doit être entre 80 et 150.")
+            st.warning(f"Description trop courte ou trop longue ({char_count}).")
 
-# --- SURGICAL UPLOADER (Founder Tool) ---
+# --- UPLOADER ---
 def admin_uploader():
     st.divider()
-    st.subheader("📤 Bibliothèque Master (Admin)")
-    up_level = st.selectbox("Niveau du PDF", ["1ère année secondaire", "4ème année (Baccalauréat)"], key="up_lvl")
-    up_sec = st.text_input("Section (Ex: Mathématiques, Générale)", key="up_sec")
-    up_subj = st.text_input("Matière (Ex: Physique, SVT)", key="up_subj")
+    st.subheader("📤 Bibliothèque Master")
+    up_level = st.selectbox("Niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"], key="up_lvl")
+    up_sec = st.text_input("Section", key="up_sec")
+    up_subj = st.text_input("Matière", key="up_subj")
+    uploaded_file = st.file_uploader("PDF", type="pdf")
     
-    uploaded_file = st.file_uploader("Choisir un PDF", type="pdf")
-    
-    if uploaded_file and st.button("Injecter dans la base"):
-        with st.spinner("Traitement du livre..."):
+    if uploaded_file and st.button("Injecter"):
+        with st.spinner("Processing..."):
             reader = pypdf.PdfReader(BytesIO(uploaded_file.read()))
             embed_model = load_embed()
-            
             for i, page in enumerate(reader.pages):
                 text = page.extract_text()
                 if len(text.strip()) > 100:
                     vector = embed_model.encode(text).tolist()
-                    data = {
+                    supabase.table("documents").insert({
                         "content": text,
-                        "metadata": {"level": up_level, "section": up_sec, "subject": up_subj, "page": i+1},
+                        "metadata": {"level": up_level, "section": up_sec, "subject": up_subj},
                         "embedding": vector
-                    }
-                    supabase.table("documents").insert(data).execute()
-            st.success(f"Livre '{up_subj}' ajouté avec succès!")
+                    }).execute()
+            st.success("Terminé !")
 
 # --- AUTH UI ---
 def auth_screen():
@@ -120,19 +118,17 @@ def auth_screen():
                 st.session_state.temp_user = {"username": nu, "password": np}
                 st.session_state.step = "onboarding"
                 st.rerun()
-            else: st.error("Vérifiez les critères (3-15 chars, pass 8+).")
+            else: st.error("Invalide.")
 
-# --- MAIN LOGIC ---
+# --- CHAT INTERFACE ---
 if st.session_state.step == "auth":
     auth_screen()
 elif st.session_state.step == "onboarding":
     onboarding()
 else:
-    # --- CHAT INTERFACE ---
     with st.sidebar:
         st.header("🛠 Founder Tools")
         st.write(f"👤 {st.session_state.user['username']}")
-        st.caption(f"{st.session_state.user['level']} - {st.session_state.user['section']}")
         if st.button("🗑 Clear Chat"):
             st.session_state.messages = []
             st.rerun()
@@ -140,8 +136,6 @@ else:
             st.session_state.user = None
             st.session_state.step = "auth"
             st.rerun()
-        
-        # Admin Section
         admin_uploader()
 
     st.title("🎓 LyceeAI")
@@ -149,26 +143,33 @@ else:
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if prompt := st.chat_input("Posez votre question..."):
+    if prompt := st.chat_input("Posez une question..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Recherche dans vos livres..."):
-                q_vec = load_embed().encode(prompt).tolist()
-                result = supabase.rpc("match_documents", {
-                    "query_embedding": q_vec,
-                    "match_threshold": 0.1,
-                    "match_count": 6,
-                    "filter_level": st.session_state.user['level'],
-                    "filter_section": st.session_state.user['section']
-                }).execute()
-                
-                context = "\n".join([item['content'] for item in result.data]) if result.data else "Aucun extrait trouvé."
-                
-                sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}, {st.session_state.user['section']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
-                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
-                
-                res_text = ask_openrouter(history)
-                st.markdown(res_text)
-                st.session_state.messages.append({"role": "assistant", "content": res_text})
+            with st.spinner("Scan..."):
+                try:
+                    q_vec = load_embed().encode(prompt).tolist()
+                    
+                    # --- FIXED SEARCH CALL ---
+                    # We pass parameters as a dictionary to ensure correct typing
+                    rpc_params = {
+                        "query_embedding": q_vec,
+                        "match_threshold": 0.1,
+                        "match_count": 5,
+                        "filter_level": str(st.session_state.user['level']),
+                        "filter_section": str(st.session_state.user['section'])
+                    }
+                    
+                    result = supabase.rpc("match_documents", rpc_params).execute()
+                    
+                    context = "\n".join([item['content'] for item in result.data]) if result.data else "Pas de contexte."
+                    sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
+                    
+                    history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
+                    res_text = ask_openrouter(history)
+                    st.markdown(res_text)
+                    st.session_state.messages.append({"role": "assistant", "content": res_text})
+                except Exception as e:
+                    st.error(f"Erreur de recherche: {e}")
