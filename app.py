@@ -4,6 +4,8 @@ from sentence_transformers import SentenceTransformer
 import requests
 import json
 import time
+from io import BytesIO
+import pypdf # Make sure to add pypdf to your requirements.txt
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide")
@@ -28,119 +30,145 @@ def ask_openrouter(messages):
     except:
         return "System is busy. Please try again."
 
-# --- AUTH LOGIC ---
+# --- AUTH STATE ---
 if "user" not in st.session_state:
     st.session_state.user = None
+if "step" not in st.session_state:
+    st.session_state.step = "auth"
 
-def signup():
-    st.subheader("📝 Créer un compte")
-    new_user = st.text_input("Nom d'utilisateur (3-15 chars)", key="reg_user")
-    new_pass = st.text_input("Mot de passe (min 8 chars)", type="password", key="reg_pass")
-    confirm_pass = st.text_input("Confirmez le mot de passe", type="password", key="reg_confirm")
-    
-    if st.button("S'inscrire"):
-        if 3 <= len(new_user) <= 15 and len(new_pass) >= 8 and new_pass == confirm_pass:
-            # Check if user exists
-            exists = supabase.table("users_profile").select("*").eq("username", new_user).execute()
-            if exists.data:
-                st.error("Nom d'utilisateur déjà pris.")
-            else:
-                st.session_state.temp_user = {"username": new_user, "password": new_pass}
-                st.session_state.step = "onboarding"
-                st.rerun()
-        else:
-            st.error("Veuillez vérifier vos informations.")
-
-def login():
-    st.subheader("🔑 Se connecter")
-    user = st.text_input("Nom d'utilisateur", key="log_user")
-    pwd = st.text_input("Mot de passe", type="password", key="log_pass")
-    if st.button("Se connecter"):
-        res = supabase.table("users_profile").select("*").eq("username", user).eq("password", pwd).execute()
-        if res.data:
-            st.session_state.user = res.data[0]
-            st.rerun()
-        else:
-            st.error("Identifiants incorrects.")
-
-# --- ONBOARDING (Level/Section/Method) ---
+# --- ONBOARDING (Fixed Version) ---
 def onboarding():
     st.header("🎯 Personnalisez votre expérience")
-    level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "2ème année (Coming Soon)", "3ème année (Coming Soon)", "4ème année (Baccalauréat)"])
+    level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"])
     
     if "1ère" in level:
         section = st.radio("Section", ["Générale", "Sport"])
-    elif "Baccalauréat" in level:
-        section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
     else:
-        st.warning("Ce niveau sera bientôt disponible.")
-        st.stop()
+        section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
 
-    method = st.text_area("Comment voulez-vous apprendre ? (Ex: Méthode active, résumés, exercices...)", min_chars=80, max_chars=150)
+    st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)")
+    method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis pour de meilleurs résultats.")
     
-    if st.button("Finaliser"):
-        user_data = {
-            **st.session_state.temp_user,
-            "level": level,
-            "section": section,
-            "teaching_method": method
-        }
-        supabase.table("users_profile").insert(user_data).execute()
-        st.session_state.user = user_data
-        st.session_state.step = "chat"
-        st.rerun()
+    char_count = len(method)
+    st.caption(f"Caractères: {char_count}/150")
 
-# --- MAIN APP ROUTING ---
-if st.session_state.user is None:
+    if st.button("Finaliser l'inscription"):
+        if 80 <= char_count <= 150:
+            user_data = {
+                **st.session_state.temp_user,
+                "level": level,
+                "section": section,
+                "teaching_method": method
+            }
+            try:
+                supabase.table("users_profile").insert(user_data).execute()
+                st.session_state.user = user_data
+                st.session_state.step = "chat"
+                st.success("Compte créé avec succès!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erreur lors de la création: {e}")
+        else:
+            st.warning(f"Votre description fait {char_count} caractères. Elle doit être entre 80 et 150.")
+
+# --- SURGICAL UPLOADER (Founder Tool) ---
+def admin_uploader():
+    st.divider()
+    st.subheader("📤 Bibliothèque Master (Admin)")
+    up_level = st.selectbox("Niveau du PDF", ["1ère année secondaire", "4ème année (Baccalauréat)"], key="up_lvl")
+    up_sec = st.text_input("Section (Ex: Mathématiques, Générale)", key="up_sec")
+    up_subj = st.text_input("Matière (Ex: Physique, SVT)", key="up_subj")
+    
+    uploaded_file = st.file_uploader("Choisir un PDF", type="pdf")
+    
+    if uploaded_file and st.button("Injecter dans la base"):
+        with st.spinner("Traitement du livre..."):
+            reader = pypdf.PdfReader(BytesIO(uploaded_file.read()))
+            embed_model = load_embed()
+            
+            for i, page in enumerate(reader.pages):
+                text = page.extract_text()
+                if len(text.strip()) > 100:
+                    vector = embed_model.encode(text).tolist()
+                    data = {
+                        "content": text,
+                        "metadata": {"level": up_level, "section": up_sec, "subject": up_subj, "page": i+1},
+                        "embedding": vector
+                    }
+                    supabase.table("documents").insert(data).execute()
+            st.success(f"Livre '{up_subj}' ajouté avec succès!")
+
+# --- AUTH UI ---
+def auth_screen():
     tab1, tab2 = st.tabs(["Se connecter", "S'inscrire"])
-    with tab1: login()
-    with tab2: signup()
-    if "step" in st.session_state and st.session_state.step == "onboarding":
-        st.divider()
-        onboarding()
+    with tab1:
+        u = st.text_input("Utilisateur", key="l_u")
+        p = st.text_input("Password", type="password", key="l_p")
+        if st.button("Entrer"):
+            res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute()
+            if res.data:
+                st.session_state.user = res.data[0]
+                st.session_state.step = "chat"
+                st.rerun()
+            else: st.error("Inconnu.")
+    with tab2:
+        nu = st.text_input("Nouvel Utilisateur", key="s_u")
+        np = st.text_input("Nouveau Password", type="password", key="s_p")
+        cp = st.text_input("Confirmer", type="password", key="s_c")
+        if st.button("Créer"):
+            if 3<=len(nu)<=15 and len(np)>=8 and np==cp:
+                st.session_state.temp_user = {"username": nu, "password": np}
+                st.session_state.step = "onboarding"
+                st.rerun()
+            else: st.error("Vérifiez les critères (3-15 chars, pass 8+).")
+
+# --- MAIN LOGIC ---
+if st.session_state.step == "auth":
+    auth_screen()
+elif st.session_state.step == "onboarding":
+    onboarding()
 else:
-    # --- SIDEBAR (SAME DESIGN) ---
+    # --- CHAT INTERFACE ---
     with st.sidebar:
         st.header("🛠 Founder Tools")
-        st.info(f"Élève: {st.session_state.user['username']}")
-        st.write(f"Niveau: {st.session_state.user['level']}")
-        st.write(f"Section: {st.session_state.user['section']}")
-        if st.button("🗑 Clear My Chat"):
+        st.write(f"👤 {st.session_state.user['username']}")
+        st.caption(f"{st.session_state.user['level']} - {st.session_state.user['section']}")
+        if st.button("🗑 Clear Chat"):
             st.session_state.messages = []
             st.rerun()
         if st.button("🚪 Déconnexion"):
             st.session_state.user = None
+            st.session_state.step = "auth"
             st.rerun()
+        
+        # Admin Section
+        admin_uploader()
 
-    # --- CHAT INTERFACE ---
-    st.title(f"🎓 LyceeAI - {st.session_state.user['level']}")
-    
+    st.title("🎓 LyceeAI")
     if "messages" not in st.session_state: st.session_state.messages = []
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    if prompt := st.chat_input("Posez une question sur vos cours..."):
+    if prompt := st.chat_input("Posez votre question..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Consultation des livres officiels..."):
-                # Search filtered by user's Level and Section
-                query_vec = load_embed().encode(prompt).tolist()
+            with st.spinner("Recherche dans vos livres..."):
+                q_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
-                    "query_embedding": query_vec,
+                    "query_embedding": q_vec,
                     "match_threshold": 0.1,
-                    "match_count": 5,
+                    "match_count": 6,
                     "filter_level": st.session_state.user['level'],
                     "filter_section": st.session_state.user['section']
                 }).execute()
                 
-                context = "\n".join([item['content'] for item in result.data])
-                method = st.session_state.user['teaching_method']
+                context = "\n".join([item['content'] for item in result.data]) if result.data else "Aucun extrait trouvé."
                 
-                sys_msg = f"Tu es LyceeAI. L'élève est en {st.session_state.user['level']}, section {st.session_state.user['section']}. Sa méthode préférée: {method}. Utilise ce contexte: {context}"
-                
+                sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}, {st.session_state.user['section']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
                 history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
-                response = ask_openrouter(history)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                res_text = ask_openrouter(history)
+                st.markdown(res_text)
+                st.session_state.messages.append({"role": "assistant", "content": res_text})
