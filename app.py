@@ -14,16 +14,17 @@ try:
     key = st.secrets["SUPABASE_KEY"]
     openrouter_key = st.secrets["OPENROUTER_API_KEY"]
 except Exception as e:
-    st.error("Secrets are missing. Please check your Streamlit Cloud settings.")
+    st.error("Secrets are missing in Streamlit Cloud.")
     st.stop()
 
 supabase = create_client(url, key)
 
 @st.cache_resource
 def load_embed():
+    # Keep using 384 dimensions for speed and efficiency
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- THE AUTO-ROUTER ENGINE (Infinite Reliability) ---
+# --- THE AUTO-ROUTER ENGINE ---
 def ask_openrouter(messages):
     endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -32,42 +33,39 @@ def ask_openrouter(messages):
         "Content-Type": "application/json"
     }
     
-    # Using 'openrouter/auto' - This automatically picks the best working model
     data = {
         "model": "openrouter/auto",
         "messages": messages,
-        "temperature": 0.4
+        "temperature": 0.3
     }
     
-    # We will try 3 times automatically before giving up
-    for attempt in range(3):
+    for attempt in range(2):
         try:
             response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=45)
             if response.status_code == 200:
                 return response.json()['choices'][0]['message']['content']
-            elif response.status_code == 401:
-                return "Error: Your API Key is invalid or hasn't updated yet. Please wait 5 minutes."
-            else:
-                time.sleep(2) # Wait 2 seconds before retrying
-                continue
+            time.sleep(1)
         except:
-            time.sleep(2)
             continue
             
-    return "The system is warming up for your 10 users. Please try one more time!"
+    return "I'm having trouble reaching the AI. Please try once more!"
 
-# --- SIDEBAR ---
+# --- SIDEBAR (Preserved arrows/buttons) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
     st.info("Mode: Auto-Routing (High Uptime)")
     
     if st.button("🔍 Audit Knowledge Base"):
         try:
-            res = supabase.table("documents").select("content").limit(2).execute()
+            res = supabase.table("documents").select("content, metadata").limit(3).execute()
+            if not res.data:
+                st.warning("Database is empty. Ready for re-upload!")
             for item in res.data:
-                st.code(f"DB Entry: {item['content'][:100]}...")
-        except:
-            st.error("Database Connection Issue.")
+                source = item.get('metadata', {}).get('source', 'Unknown Book')
+                st.caption(f"📖 {source}")
+                st.code(f"{item['content'][:100]}...")
+        except Exception as e:
+            st.error(f"DB Error: {str(e)}")
     
     st.divider()
     if st.button("🗑 Clear My Chat"):
@@ -85,36 +83,43 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a question..."):
+if prompt := st.chat_input("Ask a question about your books..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Finding the best AI for you..."):
+        with st.spinner("Searching the library..."):
             try:
-                # 1. SEARCH
+                # SEARCH WITH METADATA AWARENESS
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
                     "match_threshold": 0.05, 
-                    "match_count": 3 
+                    "match_count": 8 
                 }).execute()
                 
-                context = "\n".join([item['content'] for item in result.data]) if result.data else "General academic knowledge."
+                # Format context to show book titles to the AI
+                context_parts = []
+                for item in result.data:
+                    book_title = item.get('metadata', {}).get('source', 'Unknown')
+                    context_parts.append(f"FROM BOOK [{book_title}]: {item['content']}")
+                
+                context = "\n\n".join(context_parts) if context_parts else "The library is currently empty."
 
-                # 2. SYSTEM
-                system_msg = f"You are LyceeAI, a professional tutor. Use context: {context}."
+                # SYSTEM INSTRUCTIONS
+                system_msg = f"""You are LyceeAI. Answer using only the provided context. 
+                If the user asks for 'titles', list the 'FROM BOOK' names.
+                CONTEXT:
+                {context}"""
                 
                 chat_history = [{"role": "system", "content": system_msg}]
                 for msg in st.session_state.messages[-3:]:
                     chat_history.append(msg)
                 
-                # 3. GENERATE
                 response_text = ask_openrouter(chat_history)
-                
                 st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 
             except Exception as e:
-                st.error("System is busy. Please resend.")
+                st.error("Database connection is resetting. Please try again.")
