@@ -6,120 +6,141 @@ import json
 import time
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide")
 
-# --- DATABASE & AI SETUP ---
-try:
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-    openrouter_key = st.secrets["OPENROUTER_API_KEY"]
-except Exception as e:
-    st.error("Secrets are missing in Streamlit Cloud.")
-    st.stop()
-
+# --- DB & AI SETUP ---
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+openrouter_key = st.secrets["OPENROUTER_API_KEY"]
 supabase = create_client(url, key)
 
 @st.cache_resource
 def load_embed():
-    # Keep using 384 dimensions for speed and efficiency
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- THE AUTO-ROUTER ENGINE ---
 def ask_openrouter(messages):
     endpoint = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {openrouter_key}",
-        "HTTP-Referer": "https://lyceeai.streamlit.app", 
-        "Content-Type": "application/json"
-    }
-    
-    data = {
-        "model": "openrouter/auto",
-        "messages": messages,
-        "temperature": 0.3
-    }
-    
-    for attempt in range(2):
-        try:
-            response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=45)
-            if response.status_code == 200:
-                return response.json()['choices'][0]['message']['content']
-            time.sleep(1)
-        except:
-            continue
-            
-    return "I'm having trouble reaching the AI. Please try once more!"
+    headers = {"Authorization": f"Bearer {openrouter_key}", "Content-Type": "application/json"}
+    data = {"model": "openrouter/auto", "messages": messages, "temperature": 0.4}
+    try:
+        res = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=30)
+        return res.json()['choices'][0]['message']['content']
+    except:
+        return "System is busy. Please try again."
 
-# --- SIDEBAR (Preserved arrows/buttons) ---
-with st.sidebar:
-    st.header("🛠 Founder Tools")
-    st.info("Mode: Auto-Routing (High Uptime)")
+# --- AUTH LOGIC ---
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+def signup():
+    st.subheader("📝 Créer un compte")
+    new_user = st.text_input("Nom d'utilisateur (3-15 chars)", key="reg_user")
+    new_pass = st.text_input("Mot de passe (min 8 chars)", type="password", key="reg_pass")
+    confirm_pass = st.text_input("Confirmez le mot de passe", type="password", key="reg_confirm")
     
-    if st.button("🔍 Audit Knowledge Base"):
-        try:
-            res = supabase.table("documents").select("content, metadata").limit(3).execute()
-            if not res.data:
-                st.warning("Database is empty. Ready for re-upload!")
-            for item in res.data:
-                source = item.get('metadata', {}).get('source', 'Unknown Book')
-                st.caption(f"📖 {source}")
-                st.code(f"{item['content'][:100]}...")
-        except Exception as e:
-            st.error(f"DB Error: {str(e)}")
+    if st.button("S'inscrire"):
+        if 3 <= len(new_user) <= 15 and len(new_pass) >= 8 and new_pass == confirm_pass:
+            # Check if user exists
+            exists = supabase.table("users_profile").select("*").eq("username", new_user).execute()
+            if exists.data:
+                st.error("Nom d'utilisateur déjà pris.")
+            else:
+                st.session_state.temp_user = {"username": new_user, "password": new_pass}
+                st.session_state.step = "onboarding"
+                st.rerun()
+        else:
+            st.error("Veuillez vérifier vos informations.")
+
+def login():
+    st.subheader("🔑 Se connecter")
+    user = st.text_input("Nom d'utilisateur", key="log_user")
+    pwd = st.text_input("Mot de passe", type="password", key="log_pass")
+    if st.button("Se connecter"):
+        res = supabase.table("users_profile").select("*").eq("username", user).eq("password", pwd).execute()
+        if res.data:
+            st.session_state.user = res.data[0]
+            st.rerun()
+        else:
+            st.error("Identifiants incorrects.")
+
+# --- ONBOARDING (Level/Section/Method) ---
+def onboarding():
+    st.header("🎯 Personnalisez votre expérience")
+    level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "2ème année (Coming Soon)", "3ème année (Coming Soon)", "4ème année (Baccalauréat)"])
     
-    st.divider()
-    if st.button("🗑 Clear My Chat"):
-        st.session_state.messages = []
+    if "1ère" in level:
+        section = st.radio("Section", ["Générale", "Sport"])
+    elif "Baccalauréat" in level:
+        section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
+    else:
+        st.warning("Ce niveau sera bientôt disponible.")
+        st.stop()
+
+    method = st.text_area("Comment voulez-vous apprendre ? (Ex: Méthode active, résumés, exercices...)", min_chars=80, max_chars=150)
+    
+    if st.button("Finaliser"):
+        user_data = {
+            **st.session_state.temp_user,
+            "level": level,
+            "section": section,
+            "teaching_method": method
+        }
+        supabase.table("users_profile").insert(user_data).execute()
+        st.session_state.user = user_data
+        st.session_state.step = "chat"
         st.rerun()
 
-# --- APP INTERFACE ---
-st.title("🎓 LyceeAI")
-st.caption("Active Mentor for Tunisian Baccalaureate")
+# --- MAIN APP ROUTING ---
+if st.session_state.user is None:
+    tab1, tab2 = st.tabs(["Se connecter", "S'inscrire"])
+    with tab1: login()
+    with tab2: signup()
+    if "step" in st.session_state and st.session_state.step == "onboarding":
+        st.divider()
+        onboarding()
+else:
+    # --- SIDEBAR (SAME DESIGN) ---
+    with st.sidebar:
+        st.header("🛠 Founder Tools")
+        st.info(f"Élève: {st.session_state.user['username']}")
+        st.write(f"Niveau: {st.session_state.user['level']}")
+        st.write(f"Section: {st.session_state.user['section']}")
+        if st.button("🗑 Clear My Chat"):
+            st.session_state.messages = []
+            st.rerun()
+        if st.button("🚪 Déconnexion"):
+            st.session_state.user = None
+            st.rerun()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    # --- CHAT INTERFACE ---
+    st.title(f"🎓 LyceeAI - {st.session_state.user['level']}")
+    
+    if "messages" not in st.session_state: st.session_state.messages = []
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if prompt := st.chat_input("Posez une question sur vos cours..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"): st.markdown(prompt)
 
-if prompt := st.chat_input("Ask a question about your books..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Searching the library..."):
-            try:
-                # SEARCH WITH METADATA AWARENESS
+        with st.chat_message("assistant"):
+            with st.spinner("Consultation des livres officiels..."):
+                # Search filtered by user's Level and Section
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
-                    "match_threshold": 0.05, 
-                    "match_count": 8 
+                    "match_threshold": 0.1,
+                    "match_count": 5,
+                    "filter_level": st.session_state.user['level'],
+                    "filter_section": st.session_state.user['section']
                 }).execute()
                 
-                # Format context to show book titles to the AI
-                context_parts = []
-                for item in result.data:
-                    book_title = item.get('metadata', {}).get('source', 'Unknown')
-                    context_parts.append(f"FROM BOOK [{book_title}]: {item['content']}")
+                context = "\n".join([item['content'] for item in result.data])
+                method = st.session_state.user['teaching_method']
                 
-                context = "\n\n".join(context_parts) if context_parts else "The library is currently empty."
-
-                # SYSTEM INSTRUCTIONS
-                system_msg = f"""You are LyceeAI. Answer using only the provided context. 
-                If the user asks for 'titles', list the 'FROM BOOK' names.
-                CONTEXT:
-                {context}"""
+                sys_msg = f"Tu es LyceeAI. L'élève est en {st.session_state.user['level']}, section {st.session_state.user['section']}. Sa méthode préférée: {method}. Utilise ce contexte: {context}"
                 
-                chat_history = [{"role": "system", "content": system_msg}]
-                for msg in st.session_state.messages[-3:]:
-                    chat_history.append(msg)
-                
-                response_text = ask_openrouter(chat_history)
-                st.markdown(response_text)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
-                
-            except Exception as e:
-                st.error("Database connection is resetting. Please try again.")
+                history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
+                response = ask_openrouter(history)
+                st.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
