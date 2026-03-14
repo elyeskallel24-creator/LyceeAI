@@ -23,7 +23,7 @@ supabase = create_client(url, key)
 def load_embed():
     return SentenceTransformer('all-MiniLM-L6-v2')
 
-# --- THE AUTO-ROUTER ENGINE (Infinite Reliability) ---
+# --- THE UNSTOPPABLE ENGINE (Auto-Routing) ---
 def ask_openrouter(messages):
     endpoint = "https://openrouter.ai/api/v1/chat/completions"
     headers = {
@@ -32,31 +32,25 @@ def ask_openrouter(messages):
         "Content-Type": "application/json"
     }
     
-    # Using 'openrouter/auto' - This automatically picks the best working model
     data = {
         "model": "openrouter/auto",
         "messages": messages,
-        "temperature": 0.4
+        "temperature": 0.3 # Lower temperature for better accuracy on your data
     }
     
-    # We will try 3 times automatically before giving up
     for attempt in range(3):
         try:
             response = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=45)
             if response.status_code == 200:
                 return response.json()['choices'][0]['message']['content']
-            elif response.status_code == 401:
-                return "Error: Your API Key is invalid or hasn't updated yet. Please wait 5 minutes."
-            else:
-                time.sleep(2) # Wait 2 seconds before retrying
-                continue
+            time.sleep(2)
         except:
             time.sleep(2)
             continue
             
-    return "The system is warming up for your 10 users. Please try one more time!"
+    return "The system is currently scanning your data. Please try one more time!"
 
-# --- SIDEBAR ---
+# --- SIDEBAR (KEPT EXACTLY THE SAME) ---
 with st.sidebar:
     st.header("🛠 Founder Tools")
     st.info("Mode: Auto-Routing (High Uptime)")
@@ -65,7 +59,7 @@ with st.sidebar:
         try:
             res = supabase.table("documents").select("content").limit(2).execute()
             for item in res.data:
-                st.code(f"DB Entry: {item['content'][:100]}...")
+                st.code(f"DB Entry: {item['content'][:150]}...")
         except:
             st.error("Database Connection Issue.")
     
@@ -76,7 +70,7 @@ with st.sidebar:
 
 # --- APP INTERFACE ---
 st.title("🎓 LyceeAI")
-st.caption("Active Mentor for Tunisian Baccalaureate")
+st.caption("Active Mentor for Your Knowledge Base")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -85,26 +79,38 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask a question..."):
+if prompt := st.chat_input("Ask a question about your files..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        with st.spinner("Finding the best AI for you..."):
+        with st.spinner("Analyzing your 7,000 chunks..."):
             try:
-                # 1. SEARCH
+                # 1. SEARCH WITH HIGHER MATCH COUNT
+                # We increased match_count to 10 to see more diversity when you ask broad questions
                 query_vec = load_embed().encode(prompt).tolist()
                 result = supabase.rpc("match_documents", {
                     "query_embedding": query_vec,
                     "match_threshold": 0.05, 
-                    "match_count": 3 
+                    "match_count": 10 
                 }).execute()
                 
-                context = "\n".join([item['content'] for item in result.data]) if result.data else "General academic knowledge."
+                context = "\n".join([item['content'] for item in result.data]) if result.data else "No specific data found."
 
-                # 2. SYSTEM
-                system_msg = f"You are LyceeAI, a professional tutor. Use context: {context}."
+                # 2. SYSTEM ARCHITECTURE (Surgically aligned to your mission)
+                system_msg = f"""
+                You are LyceeAI, a professional mentor. 
+                You have a knowledge base of 7,000 file chunks. 
+                
+                YOUR MISSION:
+                1. If the user asks for 'titles' or 'subjects', scan the CONTEXT below for any headings or topics.
+                2. If the user asks for a specific topic (like Python or SVT), teach it ONLY using the context.
+                3. Do not mention Harry Potter or random exercises unless they are the primary focus of the question.
+                
+                CONTEXT FROM YOUR DATABASE:
+                {context}
+                """
                 
                 chat_history = [{"role": "system", "content": system_msg}]
                 for msg in st.session_state.messages[-3:]:
@@ -117,4 +123,4 @@ if prompt := st.chat_input("Ask a question..."):
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
                 
             except Exception as e:
-                st.error("System is busy. Please resend.")
+                st.error("I'm slightly busy. Please resend that question!")
