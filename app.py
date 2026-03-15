@@ -141,9 +141,9 @@ else:
                 st.rerun()
             admin_uploader()
 
-        # 2. THE EXPANDER (This pushes everything below it to the absolute bottom)
-        # We use a large number of empty lines inside a dedicated area
-        st.write(" \n" * 30) 
+        # 2. THE FLEXIBLE SPACER 
+        # This creates a native container that takes up 60% of the viewport height
+        st.container(height=500, border=False) 
 
         # 3. BOTTOM SECTION
         st.divider() 
@@ -152,8 +152,7 @@ else:
             st.session_state.messages = []
             st.session_state.step = "auth"
             st.rerun()
-    # --- SIDEBAR END ---
-
+# --- SIDEBAR END ---
     st.title("🎓 LyceeAI")
     if "messages" not in st.session_state: st.session_state.messages = []
     
