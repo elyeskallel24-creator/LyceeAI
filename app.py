@@ -3,7 +3,6 @@ from supabase import create_client
 from sentence_transformers import SentenceTransformer
 import requests
 import json
-import time
 from io import BytesIO
 import pypdf
 
@@ -35,42 +34,25 @@ if "user" not in st.session_state:
     st.session_state.user = None
 if "step" not in st.session_state:
     st.session_state.step = "auth"
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
 # --- ONBOARDING ---
 def onboarding():
     st.header("🎯 Personnalisez votre expérience")
     level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"])
+    section = st.radio("Section", ["Générale", "Sport"]) if "1ère" in level else st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
+    method = st.text_area("Méthode d'apprentissage (80-150 caractères)")
     
-    if "1ère" in level:
-        section = st.radio("Section", ["Générale", "Sport"])
-    else:
-        section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"])
-
-    st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)")
-    method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis.")
-    
-    char_count = len(method)
-    st.caption(f"Caractères: {char_count}/150")
-
     if st.button("Finaliser l'inscription"):
-        if 80 <= char_count <= 150:
-            user_data = {
-                "username": st.session_state.temp_user["username"],
-                "password": st.session_state.temp_user["password"],
-                "level": level,
-                "section": section,
-                "teaching_method": method
-            }
-            try:
-                supabase.table("users_profile").insert(user_data).execute()
-                st.session_state.user = user_data
-                st.session_state.step = "chat"
-                st.success("Compte créé !")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erreur: {e}")
-        else:
-            st.warning(f"Description trop courte ou trop longue ({char_count}).")
+        if 80 <= len(method) <= 150:
+            user_data = {**st.session_state.temp_user, "level": level, "section": section, "teaching_method": method}
+            supabase.table("users_profile").insert(user_data).execute()
+            st.session_state.user = user_data
+            st.session_state.messages = [] # Clear any leftover chat
+            st.session_state.step = "chat"
+            st.rerun()
+        else: st.warning("Respectez la longueur du texte.")
 
 # --- UPLOADER ---
 def admin_uploader():
@@ -85,7 +67,7 @@ def admin_uploader():
         with st.spinner("Processing..."):
             reader = pypdf.PdfReader(BytesIO(uploaded_file.read()))
             embed_model = load_embed()
-            for i, page in enumerate(reader.pages):
+            for page in reader.pages:
                 text = page.extract_text()
                 if len(text.strip()) > 100:
                     vector = embed_model.encode(text).tolist()
@@ -106,19 +88,19 @@ def auth_screen():
             res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute()
             if res.data:
                 st.session_state.user = res.data[0]
+                # --- LOAD PRIVATE CHAT ---
+                chat_res = supabase.table("chat_history").select("role, content").eq("username", u).order("created_at").execute()
+                st.session_state.messages = chat_res.data if chat_res.data else []
                 st.session_state.step = "chat"
                 st.rerun()
             else: st.error("Inconnu.")
     with tab2:
         nu = st.text_input("Nouvel Utilisateur", key="s_u")
         np = st.text_input("Nouveau Password", type="password", key="s_p")
-        cp = st.text_input("Confirmer", type="password", key="s_c")
         if st.button("Créer"):
-            if 3<=len(nu)<=15 and len(np)>=8 and np==cp:
-                st.session_state.temp_user = {"username": nu, "password": np}
-                st.session_state.step = "onboarding"
-                st.rerun()
-            else: st.error("Invalide.")
+            st.session_state.temp_user = {"username": nu, "password": np}
+            st.session_state.step = "onboarding"
+            st.rerun()
 
 # --- CHAT INTERFACE ---
 if st.session_state.step == "auth":
@@ -127,49 +109,49 @@ elif st.session_state.step == "onboarding":
     onboarding()
 else:
     with st.sidebar:
-        st.header("🛠 Founder Tools")
-        st.write(f"👤 {st.session_state.user['username']}")
+        st.header(f"👤 {st.session_state.user['username']}")
         if st.button("🗑 Clear Chat"):
+            supabase.table("chat_history").delete().eq("username", st.session_state.user['username']).execute()
             st.session_state.messages = []
             st.rerun()
         if st.button("🚪 Déconnexion"):
             st.session_state.user = None
+            st.session_state.messages = [] # IMPORTANT: Wipes screen for next user
             st.session_state.step = "auth"
             st.rerun()
         admin_uploader()
 
     st.title("🎓 LyceeAI")
-    if "messages" not in st.session_state: st.session_state.messages = []
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
     if prompt := st.chat_input("Posez une question..."):
+        # Save User Message to DB
         st.session_state.messages.append({"role": "user", "content": prompt})
+        supabase.table("chat_history").insert({"username": st.session_state.user['username'], "role": "user", "content": prompt}).execute()
+        
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
             with st.spinner("Scan..."):
                 try:
                     q_vec = load_embed().encode(prompt).tolist()
-                    
                     rpc_params = {
-                        "query_embedding": q_vec,
-                        "match_threshold": 0.1,
-                        "match_count": 5,
+                        "query_embedding": q_vec, "match_threshold": 0.1, "match_count": 5,
                         "filter_level": str(st.session_state.user['level']),
                         "filter_section": str(st.session_state.user['section'])
                     }
-                    
                     result = supabase.rpc("match_documents", rpc_params).execute()
-                    
-                    # --- FIXED KEY MATCHING THE SQL ---
                     context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte."
                     
                     sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
-                    
                     history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
                     res_text = ask_openrouter(history)
-                    st.markdown(res_text)
+                    
+                    # Save Assistant Message to DB
                     st.session_state.messages.append({"role": "assistant", "content": res_text})
+                    supabase.table("chat_history").insert({"username": st.session_state.user['username'], "role": "assistant", "content": res_text}).execute()
+                    
+                    st.markdown(res_text)
                 except Exception as e:
-                    st.error(f"Erreur de recherche: {e}")
+                    st.error(f"Erreur: {e}")
