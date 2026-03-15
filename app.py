@@ -145,7 +145,9 @@ else:
 
         # 2. THE STICKY BOTTOM (For Everyone)
         # This invisible spacer pushes the button to the bottom
-        st.html('<div style="margin-top: auto; height: 50vh;"></div>') 
+        st.spacer = st.container()
+        for _ in range(20): # The "Brute Force" method for Streamlit sidebars
+            st.sidebar.write("")
         
         if st.button("🚪 Déconnexion", use_container_width=True):
             st.session_state.user = None
