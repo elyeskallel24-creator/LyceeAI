@@ -106,7 +106,6 @@ def auth_screen():
             res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute()
             if res.data:
                 st.session_state.user = res.data[0]
-                # --- NEW: Fetch old messages from DB ---
                 chat_res = supabase.table("chat_history").select("*").eq("username", u).order("created_at").execute()
                 st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in chat_res.data]
                 st.session_state.step = "chat"
@@ -123,47 +122,52 @@ def auth_screen():
                 st.rerun()
             else: st.error("Invalide.")
 
-# --- CHAT INTERFACE ---
+# --- MAIN APP LOGIC ---
 if st.session_state.step == "auth":
     auth_screen()
 elif st.session_state.step == "onboarding":
     onboarding()
 else:
+    # --- SIDEBAR START ---
     with st.sidebar:
-        st.write(f"👤 {st.session_state.user['username']}")
-        # Check if the user is YOU
-        if st.session_state.user['username'] == "elyes":
-            st.header("🛠 Founder Tools")
-            if st.button("🗑 Clear Chat"):
-                st.session_state.messages = []
-                st.rerun()
-            # This calls the PDF uploader function only for you
-            admin_uploader()
-        # This button stays outside the 'if' so EVERYONE can log out
+        st.write(f"👤 Connecté en tant que: **{st.session_state.user['username']}**")
+        
+        # Universal logout button (everyone sees this)
         if st.button("🚪 Déconnexion"):
             st.session_state.user = None
             st.session_state.messages = []
             st.session_state.step = "auth"
             st.rerun()
-        admin_uploader()
+            
+        # THE VIP CHECK: Only 'elyes' can enter this if-statement
+        if st.session_state.user['username'] == "elyes":
+            st.header("🛠 Founder Tools")
+            if st.button("🗑 Clear Chat"):
+                st.session_state.messages = []
+                # Optional: Add code here if you want to clear the DB too
+                st.rerun()
+            
+            # The PDF tool is now LOCKED inside this if-statement
+            admin_uploader()
+    # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI")
     if "messages" not in st.session_state: st.session_state.messages = []
+    
+    # Show history
     for m in st.session_state.messages:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
+    # Chat Input
     if prompt := st.chat_input("Posez une question..."):
-        # 1. Add to screen
         st.session_state.messages.append({"role": "user", "content": prompt})
-        # 2. SAVE TO DB
         supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute()
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Scan..."):
+            with st.spinner("Recherche..."):
                 try:
                     q_vec = load_embed().encode(prompt).tolist()
-                    
                     rpc_params = {
                         "query_embedding": q_vec,
                         "match_threshold": 0.1,
@@ -171,19 +175,15 @@ else:
                         "filter_level": str(st.session_state.user['level']),
                         "filter_section": str(st.session_state.user['section'])
                     }
-                    
                     result = supabase.rpc("match_documents", rpc_params).execute()
-                    
-                    # --- FIXED KEY MATCHING THE SQL ---
                     context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte."
                     
                     sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
-                    
                     history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
+                    
                     res_text = ask_openrouter(history)
                     st.markdown(res_text)
                     st.session_state.messages.append({"role": "assistant", "content": res_text})
-                    # 3. SAVE AI RESPONSE TO DB 
                     supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute()
                 except Exception as e:
-                    st.error(f"Erreur de recherche: {e}")
+                    st.error(f"Erreur: {e}")
