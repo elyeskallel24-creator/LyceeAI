@@ -130,10 +130,9 @@ elif st.session_state.step == "onboarding":
 else:
 # --- SIDEBAR START ---
     with st.sidebar:
-        # Top Greeting
+        # 1. TOP SECTION
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
         
-        # 1. VIP TOOLS (Only for Elyes)
         if st.session_state.user['username'] == "elyes":
             st.divider()
             st.header("🛠 Founder Tools")
@@ -142,15 +141,12 @@ else:
                 st.rerun()
             admin_uploader()
 
-        # 2. THE CLEAN SPACER
-        # This is the "Goldilocks" method: Not too much code, very effective.
-        # It creates a massive vertical gap that works on both mobile and desktop.
-        for _ in range(10):
-            st.text("") # Using text("") creates a larger vertical block than write("")
+        # 2. THE EXPANDER (This pushes everything below it to the absolute bottom)
+        # We use a large number of empty lines inside a dedicated area
+        st.write(" \n" * 30) 
 
-        st.divider() # A clean line to separate the app from the system actions
-
-        # 3. LOGOUT BUTTON
+        # 3. BOTTOM SECTION
+        st.divider() 
         if st.button("🚪 Déconnexion", use_container_width=True):
             st.session_state.user = None
             st.session_state.messages = []
