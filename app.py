@@ -130,30 +130,28 @@ elif st.session_state.step == "onboarding":
 else:
     # --- SIDEBAR START ---
     with st.sidebar:
-        st.sidebar.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
-        # Create an empty space that pushes evreything else down
-        bottom_container = st.container()
-            
-        # THE VIP CHECK: Only 'elyes' can enter this if-statement
+        st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
+        
+        # 1. VIP TOOLS (Only for Elyes)
         if st.session_state.user['username'] == "elyes":
+            st.divider()
             st.header("🛠 Founder Tools")
             if st.button("🗑 Clear Chat"):
                 st.session_state.messages = []
-                # Optional: Add code here if you want to clear the DB too
                 st.rerun()
             
-            # The PDF tool is now LOCKED inside this if-statement
-
-        #This pushes the button to the bottom of the sidebar
-        with st.sidebar:
-            # We add a bunch of empty space so the button sits at the floor
-            st.markdown('<div style="height: 100%;"></div>', unsafe_allow_html=True)
-            if st.button("🚪 Déconnexion", use_container_width=True):
-                st.session_state.user = None
-                st.session_state.message = []
-                st.session_state.step = "auth"
-                st.rerun()
+            # The PDF tool stays inside the Elyes check
             admin_uploader()
+
+        # 2. THE STICKY BOTTOM (For Everyone)
+        # This invisible spacer pushes the button to the bottom
+        st.html('<div style="margin-top: auto; height: 50vh;"></div>') 
+        
+        if st.button("🚪 Déconnexion", use_container_width=True):
+            st.session_state.user = None
+            st.session_state.messages = []
+            st.session_state.step = "auth"
+            st.rerun()
     # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI")
