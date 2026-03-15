@@ -128,8 +128,9 @@ if st.session_state.step == "auth":
 elif st.session_state.step == "onboarding":
     onboarding()
 else:
-    # --- SIDEBAR START ---
+# --- SIDEBAR START ---
     with st.sidebar:
+        # Top Greeting
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
         
         # 1. VIP TOOLS (Only for Elyes)
@@ -139,16 +140,17 @@ else:
             if st.button("🗑 Clear Chat"):
                 st.session_state.messages = []
                 st.rerun()
-            
-            # The PDF tool stays inside the Elyes check
             admin_uploader()
 
-        # 2. THE STICKY BOTTOM (For Everyone)
-        # This invisible spacer pushes the button to the bottom
-        st.spacer = st.container()
-        for _ in range(20): # The "Brute Force" method for Streamlit sidebars
-            st.sidebar.write("")
-        
+        # 2. THE CLEAN SPACER
+        # This is the "Goldilocks" method: Not too much code, very effective.
+        # It creates a massive vertical gap that works on both mobile and desktop.
+        for _ in range(10):
+            st.text("") # Using text("") creates a larger vertical block than write("")
+
+        st.divider() # A clean line to separate the app from the system actions
+
+        # 3. LOGOUT BUTTON
         if st.button("🚪 Déconnexion", use_container_width=True):
             st.session_state.user = None
             st.session_state.messages = []
