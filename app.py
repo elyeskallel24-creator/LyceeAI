@@ -130,7 +130,7 @@ elif st.session_state.step == "onboarding":
 else:
     # --- SIDEBAR START ---
     with st.sidebar:
-        st.write(f"👤 Connecté en tant que: **{st.session_state.user['username']}**")
+        st.sidebar.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
         
         # Universal logout button (everyone sees this)
         if st.button("🚪 Déconnexion"):
