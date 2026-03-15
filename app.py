@@ -106,6 +106,9 @@ def auth_screen():
             res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute()
             if res.data:
                 st.session_state.user = res.data[0]
+                # --- NEW: Fetch old messages from DB ---
+                chat_res = supabase.table("chat_history").select("*").eq("username", u).order("created_at").execute()
+                st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in chat_res.data]
                 st.session_state.step = "chat"
                 st.rerun()
             else: st.error("Inconnu.")
@@ -134,6 +137,7 @@ else:
             st.rerun()
         if st.button("🚪 Déconnexion"):
             st.session_state.user = None
+            st.session_state.messages = []
             st.session_state.step = "auth"
             st.rerun()
         admin_uploader()
@@ -144,7 +148,10 @@ else:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
     if prompt := st.chat_input("Posez une question..."):
+        # 1. Add to screen
         st.session_state.messages.append({"role": "user", "content": prompt})
+        # 2. SAVE TO DB
+        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute()
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
@@ -171,5 +178,7 @@ else:
                     res_text = ask_openrouter(history)
                     st.markdown(res_text)
                     st.session_state.messages.append({"role": "assistant", "content": res_text})
+                    # 3. SAVE AI RESPONSE TO DB 
+                    supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute()
                 except Exception as e:
                     st.error(f"Erreur de recherche: {e}")
