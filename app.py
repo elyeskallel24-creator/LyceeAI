@@ -152,8 +152,6 @@ else:
                 try:
                     q_vec = load_embed().encode(prompt).tolist()
                     
-                    # --- FIXED SEARCH CALL ---
-                    # We pass parameters as a dictionary to ensure correct typing
                     rpc_params = {
                         "query_embedding": q_vec,
                         "match_threshold": 0.1,
@@ -164,7 +162,9 @@ else:
                     
                     result = supabase.rpc("match_documents", rpc_params).execute()
                     
-                    context = "\n".join([item['content'] for item in result.data]) if result.data else "Pas de contexte."
+                    # --- FIXED KEY MATCHING THE SQL ---
+                    context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte."
+                    
                     sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}"
                     
                     history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:]
