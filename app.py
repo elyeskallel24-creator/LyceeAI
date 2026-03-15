@@ -130,11 +130,16 @@ elif st.session_state.step == "onboarding":
     onboarding()
 else:
     with st.sidebar:
-        st.header("🛠 Founder Tools")
         st.write(f"👤 {st.session_state.user['username']}")
-        if st.button("🗑 Clear Chat"):
-            st.session_state.messages = []
-            st.rerun()
+        # Check if the user is YOU
+        if st.session_state.user['username'] == "elyes":
+            st.header("🛠 Founder Tools")
+            if st.button("🗑 Clear Chat"):
+                st.session_state.messages = []
+                st.rerun()
+            # This calls the PDF uploader function only for you
+            admin_uploader()
+        # This button stays outside the 'if' so EVERYONE can log out
         if st.button("🚪 Déconnexion"):
             st.session_state.user = None
             st.session_state.messages = []
