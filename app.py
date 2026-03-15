@@ -141,17 +141,22 @@ else:
                 st.rerun()
             admin_uploader()
 
-        # 2. THE FLEXIBLE SPACER 
-        # This creates a native container that takes up 60% of the viewport height
-        st.container(height=500, border=False) 
+        # 2. THE DYNAMIC SPACER
+        # Instead of one container, we use a loop of containers to "fill the tank"
+        # This works better across different screen sizes (Laptop vs Monitor)
+        for _ in range(3):
+            st.container(height=200, border=False)
 
-        # 3. BOTTOM SECTION
+        # 3. BOTTOM SECTION (The Footer)
         st.divider() 
         if st.button("🚪 Déconnexion", use_container_width=True):
             st.session_state.user = None
             st.session_state.messages = []
             st.session_state.step = "auth"
             st.rerun()
+        
+        # Optional: Add a subtle version or project tag at the very bottom
+        st.caption("LyceeAI v1.0 | Project Carthage")
 # --- SIDEBAR END ---
     st.title("🎓 LyceeAI")
     if "messages" not in st.session_state: st.session_state.messages = []
