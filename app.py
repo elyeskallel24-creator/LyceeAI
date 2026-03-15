@@ -131,13 +131,8 @@ else:
     # --- SIDEBAR START ---
     with st.sidebar:
         st.sidebar.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !")
-        
-        # Universal logout button (everyone sees this)
-        if st.button("🚪 Déconnexion"):
-            st.session_state.user = None
-            st.session_state.messages = []
-            st.session_state.step = "auth"
-            st.rerun()
+        # Create an empty space that pushes evreything else down
+        bottom_container = st.container()
             
         # THE VIP CHECK: Only 'elyes' can enter this if-statement
         if st.session_state.user['username'] == "elyes":
@@ -148,6 +143,16 @@ else:
                 st.rerun()
             
             # The PDF tool is now LOCKED inside this if-statement
+
+        #This pushes the button to the bottom of the sidebar
+        with st.sidebar:
+            # We add a bunch of empty space so the button sits at the floor
+            st.markdown('<div style="height: 100%;"></div>', unsafe_allow_html=True)
+            if st.button("🚪 Déconnexion", use_container_width=True):
+                st.session_state.user = None
+                st.session_state.message = []
+                st.session_state.step = "auth"
+                st.rerun()
             admin_uploader()
     # --- SIDEBAR END ---
 
