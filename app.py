@@ -87,7 +87,7 @@ def admin_uploader():
             embed_model = load_embed() 
             for i, page in enumerate(reader.pages): 
                 text = page.extract_text() 
-                if len(text.strip()) > 100: 
+                if text and len(text.strip()) > 100: 
                     vector = embed_model.encode(text).tolist() 
                     supabase.table("documents").insert({ 
                         "content": text, 
@@ -128,50 +128,44 @@ if st.session_state.step == "auth":
 elif st.session_state.step == "onboarding": 
     onboarding() 
 else: 
-# --- SIDEBAR START --- 
-with st.sidebar: 
-    # 1. TOP SECTION (Scrollable Container)
-    # This creates a scrollable area for your tools. 
-    # Height "600" is an example; "height" turns on the scrollbar.
-    with st.container(height=600, border=False):
-        st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-        
-        if st.session_state.user['username'] == "elyes": 
-            st.divider() 
-            st.header("🛠 Founder Tools") 
-            if st.button("🗑 Clear Chat"): 
-                st.session_state.messages = [] 
-                st.rerun() 
-            admin_uploader() 
-        
-        # Add any "scrollable" buttons or info here
+    # --- SIDEBAR START --- 
+    with st.sidebar: 
+        # 1. TOP SECTION (Scrollable Container)
+        with st.container(height=500, border=False):
+            st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
+            
+            if st.session_state.user['username'] == "elyes": 
+                st.divider() 
+                st.header("🛠 Founder Tools") 
+                if st.button("🗑 Clear Chat"): 
+                    st.session_state.messages = [] 
+                    st.rerun() 
+                admin_uploader() 
 
-    # 2. THE CSS INJECTOR (Fixed & Invisible)
-    st.markdown("""
-        <style>
-            [data-testid="stSidebarUserContent"] {
-                display: flex;
-                flex-direction: column;
-                height: 95vh;
-            }
-            /* Target the divider to push it to the absolute bottom */
-            [data-testid="stSidebarUserContent"] .stDivider {
-                margin-top: auto !important;
-            }
-        </style>
-    """, unsafe_allow_html=True)
+        # 2. THE CSS INJECTOR
+        st.markdown("""
+            <style>
+                [data-testid="stSidebarUserContent"] {
+                    display: flex;
+                    flex-direction: column;
+                    height: 95vh;
+                }
+                [data-testid="stSidebarUserContent"] .stDivider {
+                    margin-top: auto !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
 
-    # 3. FIXED FOOTER SECTION
-    # These stay outside the container above, so they never move.
-    st.divider()  
-    if st.button("🚪 Déconnexion", use_container_width=True): 
-        st.session_state.user = None 
-        st.session_state.messages = [] 
-        st.session_state.step = "auth" 
-        st.rerun() 
-    
-    st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
-# --- SIDEBAR END ---
+        # 3. FIXED FOOTER SECTION
+        st.divider()  
+        if st.button("🚪 Déconnexion", use_container_width=True): 
+            st.session_state.user = None 
+            st.session_state.messages = [] 
+            st.session_state.step = "auth" 
+            st.rerun() 
+        
+        st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
+    # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
     if "messages" not in st.session_state: st.session_state.messages = [] 
