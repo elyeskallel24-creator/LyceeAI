@@ -130,7 +130,7 @@ elif st.session_state.step == "onboarding":
 else: 
 # --- SIDEBAR START --- 
     with st.sidebar: 
-        # 1. TOP SECTION 
+        # 1. TOP SECTION (Scrollable)
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
         if st.session_state.user['username'] == "elyes": 
@@ -141,24 +141,30 @@ else:
                 st.rerun() 
             admin_uploader() 
 
-        # 2. THE SPACER 
-        # This allows the top content to be scrollable while the footer stays pinned.
-        st.container(height=400, border=False) 
-
-        # 3. FIXED FOOTER SECTION
+        # 2. THE CSS INJECTOR
+        # This makes the sidebar container a flexbox and pushes the divider to the bottom
         st.markdown("""
             <style>
                 [data-testid="stSidebarUserContent"] {
                     display: flex;
                     flex-direction: column;
-                    height: 100vh;
+                    height: 95vh; /* Adjusted to prevent overflow */
                 }
-                .stButton {
+                /* This acts as the 'spring' pushing the footer down */
+                [data-testid="stSidebarUserContent"] > div:nth-last-child(3) {
+                    flex-grow: 1;
+                }
+                .stDivider {
                     margin-top: auto;
                 }
             </style>
         """, unsafe_allow_html=True)
 
+        # 3. DYNAMIC CONTENT AREA
+        # Any additional buttons or info you add here will scroll normally
+        # until they hit the "spring" above the divider.
+
+        # 4. FIXED FOOTER SECTION
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
@@ -166,9 +172,8 @@ else:
             st.session_state.step = "auth" 
             st.rerun() 
         
-        # Updated Branding Tag
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
-# --- SIDEBAR END --- 
+# --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
     if "messages" not in st.session_state: st.session_state.messages = [] 
