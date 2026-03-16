@@ -129,8 +129,11 @@ elif st.session_state.step == "onboarding":
     onboarding() 
 else: 
 # --- SIDEBAR START --- 
-    with st.sidebar: 
-        # 1. TOP SECTION (Scrollable)
+with st.sidebar: 
+    # 1. TOP SECTION (Scrollable Container)
+    # This creates a scrollable area for your tools. 
+    # Height "600" is an example; "height" turns on the scrollbar.
+    with st.container(height=600, border=False):
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
         if st.session_state.user['username'] == "elyes": 
@@ -140,39 +143,34 @@ else:
                 st.session_state.messages = [] 
                 st.rerun() 
             admin_uploader() 
-
-        # 2. THE CSS INJECTOR
-        # This makes the sidebar container a flexbox and pushes the divider to the bottom
-        st.markdown("""
-            <style>
-                [data-testid="stSidebarUserContent"] {
-                    display: flex;
-                    flex-direction: column;
-                    height: 95vh; /* Adjusted to prevent overflow */
-                }
-                /* This acts as the 'spring' pushing the footer down */
-                [data-testid="stSidebarUserContent"] > div:nth-last-child(3) {
-                    flex-grow: 1;
-                }
-                .stDivider {
-                    margin-top: auto;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-
-        # 3. DYNAMIC CONTENT AREA
-        # Any additional buttons or info you add here will scroll normally
-        # until they hit the "spring" above the divider.
-
-        # 4. FIXED FOOTER SECTION
-        st.divider()  
-        if st.button("🚪 Déconnexion", use_container_width=True): 
-            st.session_state.user = None 
-            st.session_state.messages = [] 
-            st.session_state.step = "auth" 
-            st.rerun() 
         
-        st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
+        # Add any "scrollable" buttons or info here
+
+    # 2. THE CSS INJECTOR (Fixed & Invisible)
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarUserContent"] {
+                display: flex;
+                flex-direction: column;
+                height: 95vh;
+            }
+            /* Target the divider to push it to the absolute bottom */
+            [data-testid="stSidebarUserContent"] .stDivider {
+                margin-top: auto !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # 3. FIXED FOOTER SECTION
+    # These stay outside the container above, so they never move.
+    st.divider()  
+    if st.button("🚪 Déconnexion", use_container_width=True): 
+        st.session_state.user = None 
+        st.session_state.messages = [] 
+        st.session_state.step = "auth" 
+        st.rerun() 
+    
+    st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
 # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
