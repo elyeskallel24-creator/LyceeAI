@@ -133,19 +133,24 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Force the sidebar content area to be a flexbox that fills the height */
+                /* Force the sidebar content area to fill the screen */
                 [data-testid="stSidebarUserContent"] {
                     display: flex;
                     flex-direction: column;
-                    height: 95vh;
+                    height: 96vh !important; /* Use vh to stick to viewport */
+                    gap: 0rem !important;
                 }
-                /* This creates the 'spring' effect */
+                
+                /* This is the invisible spring that pushes the footer down */
                 .sidebar-spacer {
                     flex-grow: 1;
                 }
-                /* Ensure the caption and button stay at the very bottom */
-                .footer-container {
-                    margin-top: auto;
+
+                /* Optional: Removes extra padding from the bottom of the sidebar */
+                [data-testid="stSidebarNav"] + div {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
                 }
             </style>
         """, unsafe_allow_html=True)
