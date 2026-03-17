@@ -132,29 +132,29 @@ else:
     with st.sidebar: 
         st.markdown("""
             <style>
-                /* Set the main container to flex and full height */
+                /* Adjust the main sidebar container */
                 [data-testid="stSidebarUserContent"] {
-                    display: flex !important;
-                    flex-direction: column !important;
-                    height: 100vh !important;
+                    height: 94vh !important;
+                    display: block !important;
                 }
 
-                /* This wrapper will hold your top content and grow to fill space */
-                .sidebar-top {
-                    flex-grow: 1 !important;
-                    overflow-y: auto !important;
-                }
-
-                /* This wrapper will stay pinned at the bottom */
+                /* Container for the footer to stay at the bottom */
                 .sidebar-bottom {
-                    flex-shrink: 0 !important;
-                    padding-bottom: 20px;
+                    position: fixed !important;
+                    bottom: 20px !important;
+                    width: 300px !important; /* Matches standard sidebar width */
                     background-color: transparent;
+                    z-index: 100;
+                }
+                
+                /* Add padding to the top section so it never overlaps the footer */
+                .sidebar-top {
+                    margin-bottom: 120px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # 1. Top Section (Content)
+        # 1. Top Section
         st.markdown('<div class="sidebar-top">', unsafe_allow_html=True)
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
@@ -165,9 +165,9 @@ else:
                 st.session_state.messages = [] 
                 st.rerun() 
             admin_uploader() 
-        st.markdown('</div>', unsafe_allow_html=True) # Close sidebar-top
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. Bottom Section (Footer)
+        # 2. Bottom Section
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
@@ -176,7 +176,7 @@ else:
             st.session_state.step = "auth" 
             st.rerun() 
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
-        st.markdown('</div>', unsafe_allow_html=True) # Close sidebar-bottom
+        st.markdown('</div>', unsafe_allow_html=True)
     # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
