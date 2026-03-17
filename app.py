@@ -130,6 +130,26 @@ elif st.session_state.step == "onboarding":
 else: 
     # --- SIDEBAR START --- 
     with st.sidebar: 
+        # Inject CSS to force the footer to the bottom
+        st.markdown("""
+            <style>
+                /* Force the sidebar content area to be a flexbox that fills the height */
+                [data-testid="stSidebarUserContent"] {
+                    display: flex;
+                    flex-direction: column;
+                    height: 95vh;
+                }
+                /* This creates the 'spring' effect */
+                .sidebar-spacer {
+                    flex-grow: 1;
+                }
+                /* Ensure the caption and button stay at the very bottom */
+                .footer-container {
+                    margin-top: auto;
+                }
+            </style>
+        """, unsafe_allow_html=True)
+
         # 1. TOP SECTION (Scrollable Container)
         with st.container(height=500, border=False):
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
@@ -142,19 +162,8 @@ else:
                     st.rerun() 
                 admin_uploader() 
 
-        # 2. THE CSS INJECTOR
-        st.markdown("""
-            <style>
-                [data-testid="stSidebarUserContent"] {
-                    display: flex;
-                    flex-direction: column;
-                    height: 95vh;
-                }
-                [data-testid="stSidebarUserContent"] .stDivider {
-                    margin-top: auto !important;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+        # 2. THE SPACER (The Spring)
+        st.markdown('<div class="sidebar-spacer"></div>', unsafe_allow_html=True)
 
         # 3. FIXED FOOTER SECTION
         st.divider()  
