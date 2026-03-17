@@ -132,35 +132,42 @@ else:
     with st.sidebar: 
         st.markdown("""
             <style>
+                /* Set the main container to flex and full height */
                 [data-testid="stSidebarUserContent"] {
-                    position: relative !important;
-                    height: 95vh !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    height: 100vh !important;
                 }
+
+                /* This wrapper will hold your top content and grow to fill space */
+                .sidebar-top {
+                    flex-grow: 1 !important;
+                    overflow-y: auto !important;
+                }
+
+                /* This wrapper will stay pinned at the bottom */
                 .sidebar-bottom {
-                    position: absolute !important;
-                    bottom: 0px !important;
-                    width: 100% !important;
-                    background-color: transparent;
+                    flex-shrink: 0 !important;
                     padding-bottom: 20px;
-                }
-                .stContainer {
-                    margin-bottom: 150px !important;
+                    background-color: transparent;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # 1. Top Section
-        with st.container():
-            st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-            if st.session_state.user['username'] == "elyes": 
-                st.divider() 
-                st.header("🛠 Founder Tools") 
-                if st.button("🗑 Clear Chat"): 
-                    st.session_state.messages = [] 
-                    st.rerun() 
-                admin_uploader() 
+        # 1. Top Section (Content)
+        st.markdown('<div class="sidebar-top">', unsafe_allow_html=True)
+        st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
+        
+        if st.session_state.user['username'] == "elyes": 
+            st.divider() 
+            st.header("🛠 Founder Tools") 
+            if st.button("🗑 Clear Chat"): 
+                st.session_state.messages = [] 
+                st.rerun() 
+            admin_uploader() 
+        st.markdown('</div>', unsafe_allow_html=True) # Close sidebar-top
 
-        # 2. Bottom Section
+        # 2. Bottom Section (Footer)
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
@@ -169,7 +176,7 @@ else:
             st.session_state.step = "auth" 
             st.rerun() 
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True) # Close sidebar-bottom
     # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
