@@ -165,12 +165,7 @@ else:
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
     # --- SIDEBAR END ---
 
-    # 1. Right-aligned Logo
-    col_space, col_logo = st.columns([8, 2]) # 8 parts empty space, 2 parts logo
-    with col_logo:
-        # Using H1 to match the size of st.title
-        st.markdown("<h1 style='text-align: right; color: #FF4B4B;'><b>LyceeAI</b></h1>", unsafe_allow_html=True)
-    st.title("👨🏻‍🏫 OstedhiAI") 
+    st.title("🎓 LyceeAI") 
     if "messages" not in st.session_state: st.session_state.messages = [] 
     
     # Show history 
