@@ -133,6 +133,15 @@ else:
         # 1. Top Section
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
+        # New Navigation Buttons
+        st.button("📊 Dashboard", use_container_width=True)
+        st.button("🤖 OstedhiAI", use_container_width=True)
+        st.button("📝 Fichet", use_container_width=True)
+        st.button("✍️ Exercices", use_container_width=True)
+        st.button("🔄 Répétition Espacée", use_container_width=True)
+        st.button("📅 Planning", use_container_width=True)
+        st.button("💰 Premium", use_container_width=True)
+
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
             st.header("🛠 Founder Tools") 
@@ -142,9 +151,8 @@ else:
             admin_uploader() 
 
         # 2. THE SPACER
-        # This creates enough empty space to push the next items to the bottom
-        # Adjust the number of ranges if it's too high/low for your screen
-        for _ in range(20):
+        # Reduced from 20 to 8 because the new buttons take up vertical space
+        for _ in range(8):
             st.write("")
 
         # 3. Bottom Section
