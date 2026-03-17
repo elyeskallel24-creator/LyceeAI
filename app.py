@@ -135,7 +135,7 @@ else:
         
         # New Navigation Buttons
         st.button("📊 Dashboard", use_container_width=True)
-        st.button("🤖 OstedhiAI", use_container_width=True)
+        st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True)
         st.button("📝 Fichet", use_container_width=True)
         st.button("✍️ Exercices", use_container_width=True)
         st.button("🔄 Répétition Espacée", use_container_width=True)
