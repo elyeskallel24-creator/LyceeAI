@@ -133,28 +133,32 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Remove default Streamlit padding from sidebar */
+                /* Force the main sidebar container to be a full-height flex column */
                 [data-testid="stSidebarUserContent"] {
-                    padding-top: 1rem !important;
-                    padding-bottom: 0px !important;
-                    display: flex;
-                    flex-direction: column;
-                    height: 97vh !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    height: 95vh !important;
                 }
 
-                /* This is the magic: it pushes everything below it to the bottom */
-                .sidebar-spacer {
-                    flex-grow: 1;
+                /* This is the magic: push the bottom container to the end */
+                .sidebar-top {
+                    flex-grow: 0;
+                }
+                
+                .sidebar-bottom {
+                    margin-top: auto;
+                    padding-bottom: 20px;
                 }
 
-                /* Ensure the caption doesn't have extra bottom margin */
-                .stCaption {
-                    margin-bottom: 5px !important;
+                /* Hide the default spacer that Streamlit sometimes injects */
+                [data-testid="stSidebarUserContent"] > div:nth-child(2) {
+                    display: none;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # 1. TOP SECTION (Scrollable Container)
+        # Wrap everything that stays at the TOP in this div
+        st.markdown('<div class="sidebar-top">', unsafe_allow_html=True)
         with st.container(height=500, border=False):
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
             
@@ -165,11 +169,10 @@ else:
                     st.session_state.messages = [] 
                     st.rerun() 
                 admin_uploader() 
+        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. THE SPACER (The Spring)
-        st.markdown('<div class="sidebar-spacer"></div>', unsafe_allow_html=True)
-
-        # 3. FIXED FOOTER SECTION
+        # Wrap everything that stays at the BOTTOM in this div
+        st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
@@ -178,6 +181,7 @@ else:
             st.rerun() 
         
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
+        st.markdown('</div>', unsafe_allow_html=True)
     # --- SIDEBAR END ---
 
     st.title("🎓 LyceeAI") 
