@@ -133,36 +133,29 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Target the actual container Streamlit uses for sidebar content */
-                section[data-testid="stSidebar"] .stElementContainer {
-                    display: flex;
-                    flex-direction: column;
-                }
-
+                /* Force the sidebar container to use the full height */
                 [data-testid="stSidebarUserContent"] {
                     display: flex !important;
                     flex-direction: column !important;
                     height: 95vh !important;
                 }
 
-                .sidebar-bottom {
-                    position: fixed;
-                    bottom: 20px;
-                    width: 260px; /* Standard Streamlit sidebar width */
-                    background-color: transparent;
+                /* This class will soak up all extra space */
+                .spacer {
+                    flex-grow: 1 !important;
                 }
-                
-                /* Create a margin at the bottom of the top section so they don't overlap */
-                .sidebar-top {
-                    margin-bottom: 120px; 
+
+                /* Ensure the footer stays at the bottom and doesn't shrink */
+                .sidebar-bottom {
+                    flex-shrink: 0 !important;
+                    padding-bottom: 10px;
                 }
             </style>
         """, unsafe_allow_html=True)
 
         # Wrap everything that stays at the TOP in this div
-        # 1. Top Section
-        st.markdown('<div class="sidebar-top">', unsafe_allow_html=True)
-        with st.container(border=False):
+        # 1. Top Section (Content)
+        with st.container():
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
             if st.session_state.user['username'] == "elyes": 
                 st.divider() 
@@ -171,9 +164,11 @@ else:
                     st.session_state.messages = [] 
                     st.rerun() 
                 admin_uploader() 
-        st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. Bottom Section
+        # 2. The Spacer (This pushes the footer to the bottom)
+        st.markdown('<div class="spacer"></div>', unsafe_allow_html=True)
+
+        # 3. Bottom Section (Footer)
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
