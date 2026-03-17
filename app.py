@@ -133,35 +133,37 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Force the main sidebar container to be a full-height flex column */
+                /* Target the actual container Streamlit uses for sidebar content */
+                section[data-testid="stSidebar"] .stElementContainer {
+                    display: flex;
+                    flex-direction: column;
+                }
+
                 [data-testid="stSidebarUserContent"] {
                     display: flex !important;
                     flex-direction: column !important;
                     height: 95vh !important;
                 }
 
-                /* This is the magic: push the bottom container to the end */
-                .sidebar-top {
-                    flex-grow: 0;
+                .sidebar-bottom {
+                    position: fixed;
+                    bottom: 20px;
+                    width: 260px; /* Standard Streamlit sidebar width */
+                    background-color: transparent;
                 }
                 
-                .sidebar-bottom {
-                    margin-top: auto;
-                    padding-bottom: 20px;
-                }
-
-                /* Hide the default spacer that Streamlit sometimes injects */
-                [data-testid="stSidebarUserContent"] > div:nth-child(2) {
-                    display: none;
+                /* Create a margin at the bottom of the top section so they don't overlap */
+                .sidebar-top {
+                    margin-bottom: 120px; 
                 }
             </style>
         """, unsafe_allow_html=True)
 
         # Wrap everything that stays at the TOP in this div
+        # 1. Top Section
         st.markdown('<div class="sidebar-top">', unsafe_allow_html=True)
-        with st.container(height=500, border=False):
+        with st.container(border=False):
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-            
             if st.session_state.user['username'] == "elyes": 
                 st.divider() 
                 st.header("🛠 Founder Tools") 
@@ -171,7 +173,7 @@ else:
                 admin_uploader() 
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Wrap everything that stays at the BOTTOM in this div
+        # 2. Bottom Section
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
@@ -179,7 +181,6 @@ else:
             st.session_state.messages = [] 
             st.session_state.step = "auth" 
             st.rerun() 
-        
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
         st.markdown('</div>', unsafe_allow_html=True)
     # --- SIDEBAR END ---
