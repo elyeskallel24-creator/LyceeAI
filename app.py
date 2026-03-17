@@ -128,15 +128,14 @@ if st.session_state.step == "auth":
 elif st.session_state.step == "onboarding": 
     onboarding() 
 else: 
-    st.markdown("""
+    # --- SIDEBAR START --- 
+    with st.sidebar: 
+        st.markdown("""
             <style>
-                /* Target the sidebar container specifically */
                 [data-testid="stSidebarUserContent"] {
                     position: relative !important;
                     height: 95vh !important;
                 }
-
-                /* Force the footer to the bottom of the container */
                 .sidebar-bottom {
                     position: absolute !important;
                     bottom: 0px !important;
@@ -144,16 +143,13 @@ else:
                     background-color: transparent;
                     padding-bottom: 20px;
                 }
-                
-                /* Ensure the top content doesn't bleed into the footer if the list is long */
                 .stContainer {
                     margin-bottom: 150px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
 
-        # Wrap everything that stays at the TOP in this div
-        # 1. Top Section (Content)
+        # 1. Top Section
         with st.container():
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
             if st.session_state.user['username'] == "elyes": 
@@ -164,7 +160,7 @@ else:
                     st.rerun() 
                 admin_uploader() 
 
-        # 2. Bottom Section (Footer) - Positioned by CSS
+        # 2. Bottom Section
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
