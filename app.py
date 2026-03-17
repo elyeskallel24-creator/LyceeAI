@@ -133,24 +133,24 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Force the sidebar content area to fill the screen */
+                /* Target the main sidebar content area */
                 [data-testid="stSidebarUserContent"] {
                     display: flex;
                     flex-direction: column;
-                    height: 96vh !important; /* Use vh to stick to viewport */
-                    gap: 0rem !important;
-                }
-                
-                /* This is the invisible spring that pushes the footer down */
-                .sidebar-spacer {
-                    flex-grow: 1;
+                    height: 97vh !important;
                 }
 
-                /* Optional: Removes extra padding from the bottom of the sidebar */
-                [data-testid="stSidebarNav"] + div {
+                /* Target the internal wrapper to ensure it uses all available space */
+                [data-testid="stSidebarUserContent"] > div:first-child {
                     display: flex;
                     flex-direction: column;
-                    height: 100%;
+                    flex: 1;
+                    justify-content: space-between;
+                }
+
+                /* This ensures the scrollable container doesn't push the footer out */
+                .sidebar-spacer {
+                    flex-grow: 1;
                 }
             </style>
         """, unsafe_allow_html=True)
