@@ -128,27 +128,26 @@ if st.session_state.step == "auth":
 elif st.session_state.step == "onboarding": 
     onboarding() 
 else: 
-    # --- SIDEBAR START --- 
-    with st.sidebar: 
-        # Inject CSS to force the footer to the bottom
-        st.markdown("""
+    st.markdown("""
             <style>
-                /* Force the sidebar container to use the full height */
+                /* Target the sidebar container specifically */
                 [data-testid="stSidebarUserContent"] {
-                    display: flex !important;
-                    flex-direction: column !important;
+                    position: relative !important;
                     height: 95vh !important;
                 }
 
-                /* This class will soak up all extra space */
-                .spacer {
-                    flex-grow: 1 !important;
-                }
-
-                /* Ensure the footer stays at the bottom and doesn't shrink */
+                /* Force the footer to the bottom of the container */
                 .sidebar-bottom {
-                    flex-shrink: 0 !important;
-                    padding-bottom: 10px;
+                    position: absolute !important;
+                    bottom: 0px !important;
+                    width: 100% !important;
+                    background-color: transparent;
+                    padding-bottom: 20px;
+                }
+                
+                /* Ensure the top content doesn't bleed into the footer if the list is long */
+                .stContainer {
+                    margin-bottom: 150px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
@@ -165,10 +164,7 @@ else:
                     st.rerun() 
                 admin_uploader() 
 
-        # 2. The Spacer (This pushes the footer to the bottom)
-        st.markdown('<div class="spacer"></div>', unsafe_allow_html=True)
-
-        # 3. Bottom Section (Footer)
+        # 2. Bottom Section (Footer) - Positioned by CSS
         st.markdown('<div class="sidebar-bottom">', unsafe_allow_html=True)
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
