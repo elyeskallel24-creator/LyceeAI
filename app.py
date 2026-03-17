@@ -133,24 +133,23 @@ else:
         # Inject CSS to force the footer to the bottom
         st.markdown("""
             <style>
-                /* Target the main sidebar content area */
+                /* Remove default Streamlit padding from sidebar */
                 [data-testid="stSidebarUserContent"] {
+                    padding-top: 1rem !important;
+                    padding-bottom: 0px !important;
                     display: flex;
                     flex-direction: column;
                     height: 97vh !important;
                 }
 
-                /* Target the internal wrapper to ensure it uses all available space */
-                [data-testid="stSidebarUserContent"] > div:first-child {
-                    display: flex;
-                    flex-direction: column;
-                    flex: 1;
-                    justify-content: space-between;
-                }
-
-                /* This ensures the scrollable container doesn't push the footer out */
+                /* This is the magic: it pushes everything below it to the bottom */
                 .sidebar-spacer {
                     flex-grow: 1;
+                }
+
+                /* Ensure the caption doesn't have extra bottom margin */
+                .stCaption {
+                    margin-bottom: 5px !important;
                 }
             </style>
         """, unsafe_allow_html=True)
