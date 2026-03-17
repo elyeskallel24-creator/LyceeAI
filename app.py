@@ -130,10 +130,12 @@ elif st.session_state.step == "onboarding":
 else: 
     # --- SIDEBAR START --- 
     with st.sidebar: 
-        # 1. Top Section
+        # 1. LOGO & WELCOME
+        st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>🎓 LyceeAI</h1>", unsafe_allow_html=True)
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-        
-        # New Navigation Buttons
+        st.divider()
+
+        # 2. NAVIGATION MENU
         st.button("📊 Dashboard", use_container_width=True)
         st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True)
         st.button("📝 Fichet", use_container_width=True)
@@ -142,20 +144,21 @@ else:
         st.button("📅 Planning", use_container_width=True)
         st.button("💰 Premium", use_container_width=True)
 
+        # 3. FOUNDER TOOLS (Only for Elyes)
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
-            st.header("🛠 Founder Tools") 
-            if st.button("🗑 Clear Chat"): 
-                st.session_state.messages = [] 
-                st.rerun() 
-            admin_uploader() 
+            with st.expander("🛠 Founder Tools"):
+                if st.button("🗑 Clear Chat"): 
+                    st.session_state.messages = [] 
+                    st.rerun() 
+                admin_uploader() 
 
-        # 2. THE SPACER
-        # Reduced from 20 to 8 because the new buttons take up vertical space
-        for _ in range(8):
+        # 4. THE SPACER 
+        # Reduced further to keep everything tight with the new logo
+        for _ in range(5):
             st.write("")
 
-        # 3. Bottom Section
+        # 5. FOOTER
         st.divider()  
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
