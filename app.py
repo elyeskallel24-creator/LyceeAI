@@ -131,7 +131,7 @@ else:
     # --- SIDEBAR START --- 
     with st.sidebar:
         # --- LOGO ---
-        st.markdown("<h1 style='color: white; text-align: center; font-size: 60px; '>LyceeAI</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='color: white; text-align: right; font-size: 60px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
         st.divider()
         # 1. Top Section
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
