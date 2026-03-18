@@ -129,7 +129,10 @@ elif st.session_state.step == "onboarding":
     onboarding() 
 else: 
     # --- SIDEBAR START --- 
-    with st.sidebar: 
+    with st.sidebar:
+        # --- LOGO ---
+        st.markdown("<h1 style='color: white; text-align: center;'>LyceeAI</h1>", unsafe_allow_html=True)
+        st.divider()
         # 1. Top Section
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
