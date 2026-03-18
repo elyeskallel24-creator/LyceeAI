@@ -142,7 +142,6 @@ else:
         st.button("✍️ Exercices", use_container_width=True)
         st.button("🔄 Répétition Espacée", use_container_width=True)
         st.button("📅 Planning", use_container_width=True)
-        st.button("💰 Premium", use_container_width=True)
 
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
@@ -158,7 +157,8 @@ else:
             st.write("")
 
         # 3. Bottom Section
-        st.divider()  
+        st.divider()
+        st.button("💰 Premium", use_container_width=True)
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
             st.session_state.messages = [] 
