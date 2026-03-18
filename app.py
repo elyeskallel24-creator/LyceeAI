@@ -37,7 +37,6 @@ if "step" not in st.session_state:
     st.session_state.step = "auth" 
 if "page" not in st.session_state:
     st.session_state.page = "chat"
-
 # --- ONBOARDING --- 
 def onboarding(): 
     st.header("🎯 Personnalisez votre expérience") 
@@ -140,16 +139,16 @@ else:
         # New Navigation Buttons
         if st.button("📊 Dashboard", use_container_width=True):
             st.session_state.page = "dashboard"
-        if st.button("📊 Dashboard", use_container_width=True):
+        if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
             st.session_state.page = "chat"
         if st.button("📝 Fichet", use_container_width=True):
-            st.session_stage.page = "fichet"
+            st.session_state.page = "fichet"
         if st.button("✍️ Exercices", use_container_width=True):
             st.session_state.page = "exercices"
         if st.button("🔄 Répétition Espacée", use_container_width=True):
-            st.session_state.page= "repetition"
+            st.session_state.page = "repetition"
         if st.button("📅 Planning", use_container_width=True):
-            st.session_state = "planning"
+            st.session_state.page = "planning"
 
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
@@ -179,38 +178,31 @@ else:
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
         st.title("📊 Dashboard")
-        st.write("Contenu à venir...")
+        st.write("Bienvenue sur votre tableau de bord.")
 
     elif st.session_state.page == "fichet":
         st.title("📝 Fichet")
-        st.write("Contenu à venir...")
 
     elif st.session_state.page == "exercices":
         st.title("✍️ Exercices")
-        st.write("Contenu à venir...")
 
     elif st.session_state.page == "repetition":
         st.title("🔄 Répétition Espacée")
-        st.write("Contenu à venir...")
 
     elif st.session_state.page == "planning":
         st.title("📅 Planning")
-        st.write("Contenu à venir...")
 
     elif st.session_state.page == "abonnements":
         st.title("💰 Abonnements")
-        st.write("Contenu à venir...")
 
     elif st.session_state.page == "chat":
-        # THIS IS YOUR ORIGINAL CHAT CODE
+        # THIS IS YOUR ORIGINAL CHATBOT CODE
         st.title("👨🏻‍🏫 OstedhiAI") 
         if "messages" not in st.session_state: st.session_state.messages = [] 
         
-        # Show history 
         for m in st.session_state.messages: 
             with st.chat_message(m["role"]): st.markdown(m["content"]) 
 
-        # Chat Input 
         if prompt := st.chat_input("Posez une question..."): 
             st.session_state.messages.append({"role": "user", "content": prompt}) 
             supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
@@ -228,7 +220,6 @@ else:
                             "filter_section": str(st.session_state.user['section']) 
                         } 
                         result = supabase.rpc("match_documents", rpc_params).execute() 
-
                         context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
                         
                         sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
@@ -237,7 +228,6 @@ else:
                         res_text = ask_openrouter(history) 
                         st.markdown(res_text) 
                         st.session_state.messages.append({"role": "assistant", "content": res_text}) 
-
                         supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
                     except Exception as e: 
                         st.error(f"Erreur: {e}")
