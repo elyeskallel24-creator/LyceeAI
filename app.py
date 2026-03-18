@@ -158,7 +158,7 @@ else:
 
         # 3. Bottom Section
         st.divider()
-        st.button("💰 Premium", use_container_width=True)
+        st.button("💰 Plans", use_container_width=True)
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
             st.session_state.messages = [] 
