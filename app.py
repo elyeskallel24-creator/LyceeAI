@@ -159,6 +159,9 @@ else:
         # 3. Bottom Section
         st.divider()
         st.button("💰 Abonnements", use_container_width=True)
+        if st.button("💰 Abonnements", use_container_width=True):
+            st.session_state.show_subs = True
+            st.rerun()
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
             st.session_state.messages = [] 
@@ -168,7 +171,81 @@ else:
     # --- SIDEBAR END ---
 
     st.title("👨🏻‍🏫 OstedhiAI") 
-    if "messages" not in st.session_state: st.session_state.messages = [] 
+    if "messages" not in st.session_state: st.session_state.messages = []
+
+    # --- VIEW TOGGLE ---
+    if "show_subs" not in st.session_state:
+        st.session_state.show_subs = False
+
+    if st.session_state.show_subs:
+        st.title("💎 Choisissez votre plan")
+        
+        # Create 3 columns for the Rounded Rectangles
+        col1, col2, col3 = st.columns(3)
+
+        plans = [
+            {"name": "Gratuit", "price": "0 DT", "features": ["5 questions / jour", "Accès basique", "Communauté"]},
+            {"name": "Pro", "price": "19 DT / mois", "features": ["Questions illimitées", "Fiches de révision", "IA plus rapide"]},
+            {"name": "Elite", "price": "35 DT / mois", "features": ["Tout le plan Pro", "Correction devoirs", "Support 24/7"]}
+        ]
+
+        for i, col in enumerate([col1, col2, col3]):
+            with col:
+                st.markdown(f"""
+                <div style="
+                    border: 2px solid #4CAF50;
+                    border-radius: 15px;
+                    padding: 20px;
+                    text-align: center;
+                    background-color: rgba(255, 255, 255, 0.05);
+                ">
+                    <h3>{plans[i]['name']}</h3>
+                    <h2>{plans[i]['price']}</h2>
+                    <hr>
+                    <p>{'<br>'.join(plans[i]['features'])}</p>
+                </div>
+                """, unsafe_allow_html=True)
+                if st.button(f"Choisir {plans[i]['name']}", key=f"btn_{i}", use_container_width=True):
+                    st.success(f"Redirection vers paiement {plans[i]['name']}...")
+
+    else:
+        # --- ORIGINAL CHAT LOGIC ---
+        st.title("👨🏻‍🏫 OstedhiAI") 
+        if "messages" not in st.session_state: st.session_state.messages = [] 
+        
+        for m in st.session_state.messages: 
+            with st.chat_message(m["role"]): st.markdown(m["content"]) 
+
+        if prompt := st.chat_input("Posez une question..."): 
+            st.session_state.messages.append({"role": "user", "content": prompt}) 
+            supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
+            with st.chat_message("user"): st.markdown(prompt) 
+
+            with st.chat_message("assistant"): 
+                with st.spinner("Recherche..."): 
+                    try: 
+                        q_vec = load_embed().encode(prompt).tolist() 
+                        rpc_params = { 
+                            "query_embedding": q_vec, 
+                            "match_threshold": 0.1, 
+                            "match_count": 5, 
+                            "filter_level": str(st.session_state.user['level']), 
+                            "filter_section": str(st.session_state.user['section']) 
+                        } 
+                        result = supabase.rpc("match_documents", rpc_params).execute() 
+
+                        context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
+                        
+                        sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
+                        history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
+                        
+                        res_text = ask_openrouter(history) 
+                        st.markdown(res_text) 
+                        st.session_state.messages.append({"role": "assistant", "content": res_text}) 
+                        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
+                    except Exception as e: 
+                        st.error(f"Erreur: {e}")
+    # ---END VIEW TOGGLE ---
     
     # Show history 
     for m in st.session_state.messages: 
