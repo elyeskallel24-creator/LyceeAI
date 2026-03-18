@@ -35,6 +35,8 @@ if "user" not in st.session_state:
     st.session_state.user = None 
 if "step" not in st.session_state: 
     st.session_state.step = "auth" 
+if "page" not in st.session_state:
+    st.session_state.page = "chat"
 
 # --- ONBOARDING --- 
 def onboarding(): 
@@ -136,12 +138,18 @@ else:
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
         # New Navigation Buttons
-        st.button("📊 Dashboard", use_container_width=True)
-        st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True)
-        st.button("📝 Fichet", use_container_width=True)
-        st.button("✍️ Exercices", use_container_width=True)
-        st.button("🔄 Répétition Espacée", use_container_width=True)
-        st.button("📅 Planning", use_container_width=True)
+        if st.button("📊 Dashboard", use_container_width=True):
+            st.session_state.page = "dashboard"
+        if st.button("📊 Dashboard", use_container_width=True):
+            st.session_state.page = "chat"
+        if st.button("📝 Fichet", use_container_width=True):
+            st.session_stage.page = "fichet"
+        if st.button("✍️ Exercices", use_container_width=True):
+            st.session_state.page = "exercices"
+        if st.button("🔄 Répétition Espacée", use_container_width=True):
+            st.session_state.page= "repetition"
+        if st.button("📅 Planning", use_container_width=True):
+            st.session_state = "planning"
 
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
@@ -158,7 +166,8 @@ else:
 
         # 3. Bottom Section
         st.divider()
-        st.button("💰 Abonnements", use_container_width=True)
+        if st.button("💰 Abonnements", use_container_width=True):
+            st.session_state.page = "abonnements"
         if st.button("🚪 Déconnexion", use_container_width=True): 
             st.session_state.user = None 
             st.session_state.messages = [] 
@@ -167,41 +176,68 @@ else:
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
     # --- SIDEBAR END ---
 
-    st.title("👨🏻‍🏫 OstedhiAI") 
-    if "messages" not in st.session_state: st.session_state.messages = []
-    
-    # Show history 
-    for m in st.session_state.messages: 
-        with st.chat_message(m["role"]): st.markdown(m["content"]) 
+    # --- PAGE ROUTING ---
+    if st.session_state.page == "dashboard":
+        st.title("📊 Dashboard")
+        st.write("Contenu à venir...")
 
-    # Chat Input 
-    if prompt := st.chat_input("Posez une question..."): 
-        st.session_state.messages.append({"role": "user", "content": prompt}) 
-        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
-        with st.chat_message("user"): st.markdown(prompt) 
+    elif st.session_state.page == "fichet":
+        st.title("📝 Fichet")
+        st.write("Contenu à venir...")
 
-        with st.chat_message("assistant"): 
-            with st.spinner("Recherche..."): 
-                try: 
-                    q_vec = load_embed().encode(prompt).tolist() 
-                    rpc_params = { 
-                        "query_embedding": q_vec, 
-                        "match_threshold": 0.1, 
-                        "match_count": 5, 
-                        "filter_level": str(st.session_state.user['level']), 
-                        "filter_section": str(st.session_state.user['section']) 
-                    } 
-                    result = supabase.rpc("match_documents", rpc_params).execute() 
+    elif st.session_state.page == "exercices":
+        st.title("✍️ Exercices")
+        st.write("Contenu à venir...")
 
-                    context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
-                    
-                    sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
-                    history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
-                    
-                    res_text = ask_openrouter(history) 
-                    st.markdown(res_text) 
-                    st.session_state.messages.append({"role": "assistant", "content": res_text}) 
+    elif st.session_state.page == "repetition":
+        st.title("🔄 Répétition Espacée")
+        st.write("Contenu à venir...")
 
-                    supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
-                except Exception as e: 
-                    st.error(f"Erreur: {e}")
+    elif st.session_state.page == "planning":
+        st.title("📅 Planning")
+        st.write("Contenu à venir...")
+
+    elif st.session_state.page == "abonnements":
+        st.title("💰 Abonnements")
+        st.write("Contenu à venir...")
+
+    elif st.session_state.page == "chat":
+        # THIS IS YOUR ORIGINAL CHAT CODE
+        st.title("👨🏻‍🏫 OstedhiAI") 
+        if "messages" not in st.session_state: st.session_state.messages = [] 
+        
+        # Show history 
+        for m in st.session_state.messages: 
+            with st.chat_message(m["role"]): st.markdown(m["content"]) 
+
+        # Chat Input 
+        if prompt := st.chat_input("Posez une question..."): 
+            st.session_state.messages.append({"role": "user", "content": prompt}) 
+            supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
+            with st.chat_message("user"): st.markdown(prompt) 
+
+            with st.chat_message("assistant"): 
+                with st.spinner("Recherche..."): 
+                    try: 
+                        q_vec = load_embed().encode(prompt).tolist() 
+                        rpc_params = { 
+                            "query_embedding": q_vec, 
+                            "match_threshold": 0.1, 
+                            "match_count": 5, 
+                            "filter_level": str(st.session_state.user['level']), 
+                            "filter_section": str(st.session_state.user['section']) 
+                        } 
+                        result = supabase.rpc("match_documents", rpc_params).execute() 
+
+                        context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
+                        
+                        sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
+                        history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
+                        
+                        res_text = ask_openrouter(history) 
+                        st.markdown(res_text) 
+                        st.session_state.messages.append({"role": "assistant", "content": res_text}) 
+
+                        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
+                    except Exception as e: 
+                        st.error(f"Erreur: {e}")
