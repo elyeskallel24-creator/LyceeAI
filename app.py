@@ -131,7 +131,7 @@ else:
     # --- SIDEBAR START --- 
     with st.sidebar:
         # --- LOGO ---
-        st.markdown("<h1 style='color: white; text-align: left; font-size: 60px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
         st.divider()
         # 1. Top Section
         st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
@@ -168,7 +168,7 @@ else:
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
     # --- SIDEBAR END ---
 
-    st.title("🎓 LyceeAI") 
+    st.title("👨🏻‍🏫 OstedhiAI") 
     if "messages" not in st.session_state: st.session_state.messages = [] 
     
     # Show history 
