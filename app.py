@@ -194,28 +194,6 @@ else:
 
     elif st.session_state.page == "abonnements":
         st.title("💰 Abonnements")
-        # Injecting the "Equal Height" fix
-        st.markdown("""
-            <style>
-            /* Target the container inside the column to force it to fill height */
-            div[data-testid="stColumn"] > div {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-            /* Target the border wrapper specifically */
-            div[data-testid="stVerticalBlockBorderWrapper"] {
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                height: 100% !important;
-            }
-            /* Ensure the inner block also stretches */
-            div[data-testid="stVerticalBlockBorderWrapper"] > div {
-                flex-grow: 1;
-            }
-            </style>
-            """, unsafe_allow_html=True)
         # 1. Creating 3 columns (side-by-side spaces)
         col1, col2, col3 = st.columns(3)
         # 2. Putting a rounded empty box in the first column
