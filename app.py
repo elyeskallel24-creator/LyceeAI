@@ -215,19 +215,23 @@ else:
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
         st.title("📊 Dashboard")
-        st.write("Bienvenue sur votre tableau de bord.")
+        st.header("Coming soon...⌛")
 
     elif st.session_state.page == "fichet":
         st.title("📝 Fichet")
+        st.header("Coming soon...⌛")
 
     elif st.session_state.page == "exercices":
         st.title("✍️ Exercices")
+        st.header("Coming soon...⌛")
 
     elif st.session_state.page == "repetition":
         st.title("🔄 Répétition Espacée")
+        st.header("Coming soon...⌛")
 
     elif st.session_state.page == "planning":
         st.title("📅 Planning")
+        st.header("Coming soon...⌛")
 
     elif st.session_state.page == "abonnements":
         st.title("💰 Abonnements")
