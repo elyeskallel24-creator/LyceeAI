@@ -202,21 +202,21 @@ else:
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **LITE**", unsafe_allow_html=True)
                 st.write("OstedhiAI yefhem fil program el tounsi")
-                st.markdown("## 8dt <span style='font-size: 18px; color: grey; font-weight: normal;'>/month</span>", unsafe_allow_html=True)
+                st.markdown("### 8dt <span style='font-size: 18px; color: grey; font-weight: normal;'>/month</span>", unsafe_allow_html=True)
         # 3. Putting a rounded empty box in the second column
         with col2:
             # Adding a title in the second empty rounded box
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PLUS**", unsafe_allow_html=True)
                 st.write("LITE + OstedhiAI yjewbek asra3 + historique akber")
-                st.header("26dt")
+                st.markdown("### 26dt <span style='font-size: 18px; color: grey; font-weight: normal;'>/month</span>", unsafe_allow_html=True)
         # 4. Putting a rounded empty box in the third column
         with col3:
             # Adding a title in the third empty rounded box
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PRO**", unsafe_allow_html=True)
                 st.write("LITE + PLUS + Accès kemel lmizet LyceeAI lkol + AI a9wa (mémoire et vitesse)")
-                st.header("125dt")
+                st.markdown("### 125dt <span style='font-size: 18px; color: grey; font-weight: normal;'>/month</span>", unsafe_allow_html=True)
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
         st.title("👨🏻‍🏫 OstedhiAI") 
