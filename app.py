@@ -230,7 +230,7 @@ else:
                 st.markdown("• Accès à de nombreux outils de productivité avancés et rapides")
                 st.markdown("• Mémoire étendue liée à l'écosystème LyceeAI")
                 st.markdown("• Un écosystème personnalisé, adapté à vos besoins")
-                st.markdoow("• Des ressources riches et mises à jour chaque semaine")
+                st.markdown("• Des ressources riches et mises à jour chaque semaine")
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
         st.title("👨🏻‍🏫 OstedhiAI") 
