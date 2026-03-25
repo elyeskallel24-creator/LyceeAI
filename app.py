@@ -133,7 +133,7 @@ else:
     with st.sidebar:
         # CASE 1: The OstedhiAI Specific Sidebar
         if st.session_state.page == "chat":
-            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🗣️🔥 Sba7lkhir ya weldi</h1>", unsafe_allow_html=True)
+            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🗣️🔥 'a9ra bch tanja7'</h1>", unsafe_allow_html=True)
             
             if st.button("⬅️ Retour", use_container_width=True):
                 st.session_state.page = "dashboard"
