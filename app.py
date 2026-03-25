@@ -131,39 +131,51 @@ elif st.session_state.step == "onboarding":
 else: 
     # --- SIDEBAR START --- 
     with st.sidebar:
-        # --- LOGO ---
         st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
-        # 1. Top Section
-        st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
         
-        # New Navigation Buttons
+        # NAVIGATION SECTION
         if st.button("📊 Dashboard", use_container_width=True):
             st.session_state.page = "dashboard"
         if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
             st.session_state.page = "chat"
-        if st.button("📝 Fichet", use_container_width=True):
-            st.session_state.page = "fichet"
-        if st.button("✍️ Exercices", use_container_width=True):
-            st.session_state.page = "exercices"
-        if st.button("🔄 Répétition Espacée", use_container_width=True):
-            st.session_state.page = "repetition"
-        if st.button("📅 Planning", use_container_width=True):
-            st.session_state.page = "planning"
+        
+        # --- DYNAMIC CHAT SIDEBAR (ChatGPT Style) ---
+        if st.session_state.page == "chat":
+            st.divider()
+            if st.button("➕ New Chat", use_container_width=True):
+                st.session_state.messages = []
+                st.rerun()
+            
+            if st.button("🗑️ Delete All Chats", use_container_width=True):
+                supabase.table("chat_history").delete().eq("username", st.session_state.user["username"]).execute()
+                st.session_state.messages = []
+                st.rerun()
+            
+            st.subheader("Recent Chats")
+            # This displays the last 10 messages as "history" links
+            # In a real app, you'd group these by a 'chat_id' column
+            unique_chats = st.session_state.messages[-10:] 
+            for msg in reversed(unique_chats):
+                if msg["role"] == "user":
+                    # Truncate long text for the sidebar
+                    display_text = (msg["content"][:25] + '...') if len(msg["content"]) > 25 else msg["content"]
+                    st.caption(f"💬 {display_text}")
 
+        # OTHER PAGES SECTION
+        else:
+            if st.button("📝 Fichet", use_container_width=True): st.session_state.page = "fichet"
+            if st.button("✍️ Exercices", use_container_width=True): st.session_state.page = "exercices"
+            if st.button("🔄 Répétition Espacée", use_container_width=True): st.session_state.page = "repetition"
+            if st.button("📅 Planning", use_container_width=True): st.session_state.page = "planning"
+
+        # FOUNDER TOOLS
         if st.session_state.user['username'] == "elyes": 
             st.divider() 
             st.header("🛠 Founder Tools") 
-            if st.button("🗑 Clear Chat"): 
-                st.session_state.messages = [] 
-                st.rerun() 
             admin_uploader() 
 
-        # 2. THE SPACER
-        # Reduced from 20 to 8 because the new buttons take up vertical space
-        for _ in range(8):
-            st.write("")
-
-        # 3. Bottom Section
+        # BOTTOM SECTION
+        for _ in range(5): st.write("")
         st.divider()
         if st.button("💰 Abonnements", use_container_width=True):
             st.session_state.page = "abonnements"
@@ -174,7 +186,6 @@ else:
             st.rerun() 
         st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
     # --- SIDEBAR END ---
-
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
         st.title("📊 Dashboard")
