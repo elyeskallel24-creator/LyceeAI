@@ -266,7 +266,6 @@ else:
                 st.markdown("• Un écosystème personnalisé, adapté à vos besoins")
                 st.markdown("• Des ressources riches et mises à jour chaque semaine")
     elif st.session_state.page == "chat":
-        # THIS IS YOUR ORIGINAL CHATBOT CODE
         st.title("👨🏻‍🏫 OstedhiAI") 
         if "messages" not in st.session_state: st.session_state.messages = [] 
         
@@ -284,7 +283,7 @@ else:
             
             supabase.table("chat_history").insert({
                 "username": st.session_state.user["username"], 
-                "session_id": st.session_state.current_session_id, # <--- CRITICAL
+                "session_id": st.session_state.current_session_id,
                 "role": "user", 
                 "content": prompt
             }).execute() 
@@ -292,13 +291,22 @@ else:
             with st.chat_message("assistant"): 
                 with st.spinner("Recherche..."): 
                     try: 
-                        # ... (your existing vector search code) ...
+                        # --- VECTOR SEARCH LOGIC ---
                         q_vec = load_embed().encode(prompt).tolist() 
-                        # ... (your existing rpc_params code) ...
                         
-                        # (Keep your existing search/AI logic here)
+                        # DEFINING THE MISSING VARIABLE HERE
+                        rpc_params = { 
+                            "query_embedding": q_vec, 
+                            "match_threshold": 0.1, 
+                            "match_count": 5, 
+                            "filter_level": str(st.session_state.user['level']), 
+                            "filter_section": str(st.session_state.user['section']) 
+                        } 
+                        
                         result = supabase.rpc("match_documents", rpc_params).execute() 
                         context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
+                        
+                        # --- AI RESPONSE LOGIC ---
                         sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
                         history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
                         
@@ -309,7 +317,7 @@ else:
                         st.session_state.messages.append({"role": "assistant", "content": res_text}) 
                         supabase.table("chat_history").insert({
                             "username": st.session_state.user["username"], 
-                            "session_id": st.session_state.current_session_id, # <--- CRITICAL
+                            "session_id": st.session_state.current_session_id,
                             "role": "assistant", 
                             "content": res_text
                         }).execute() 
