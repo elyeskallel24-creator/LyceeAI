@@ -194,6 +194,15 @@ else:
 
     elif st.session_state.page == "abonnements":
         st.title("💰 Abonnements")
+        # Injecting the "Equal Height" fix
+        st.markdown("""
+            <style>
+            div[data-testid="stColumn"] > div > div[data-testid="stVerticalBlockBorderWrapper"] {
+                height: 100% !important;
+                min-height: 550px; /* Optional: sets a minimum height so they don't look squashed on small screens */
+            }
+            </style>
+            """, unsafe_allow_html=True)
         # 1. Creating 3 columns (side-by-side spaces)
         col1, col2, col3 = st.columns(3)
         # 2. Putting a rounded empty box in the first column
