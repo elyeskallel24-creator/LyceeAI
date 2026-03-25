@@ -200,17 +200,17 @@ else:
         with col1:
             # Adding a title in the first empty rounded box
             with st.container(border=True):
-                st.subheader("LyceeAI LITE")
+                st.markdown("### LyceeAI **LITE**")
         # 3. Putting a rounded empty box in the second column
         with col2:
             # Adding a title in the second empty rounded box
             with st.container(border=True):
-                st.subheader("LyceeAI PLUS")
+                st.markdown("### LyceeAI **PLUS**")
         # 4. Putting a rounded empty box in the third column
         with col3:
             # Adding a title in the third empty rounded box
             with st.container(border=True):
-                st.subheader("LyceeAI PRO")
+                st.markdown("### LyceeAI **PRO**")
 
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
