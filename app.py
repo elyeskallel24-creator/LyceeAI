@@ -133,25 +133,24 @@ else:
     with st.sidebar:
         # CASE 1: The OstedhiAI Specific Sidebar
         if st.session_state.page == "chat":
-            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>👨🏻‍🏫 OstedhiAI</h1>", unsafe_allow_html=True)
+            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🗣️🔥Sba7lkhir ya weldi</h1>", unsafe_allow_html=True)
             
-            if st.button("⬅️ Go Back", use_container_width=True):
+            if st.button("⬅️ Retour", use_container_width=True):
                 st.session_state.page = "dashboard"
                 st.rerun()
             
             # --- LINES REMOVED HERE ---
-            if st.button("➕ New Chat Session", use_container_width=True):
+            if st.button("➕ Nouvelle Session De Chat", use_container_width=True):
                 st.session_state.messages = []
                 st.rerun()
                 
-            if st.button("🗑️ Delete All Sessions", use_container_width=True):
+            if st.button("🗑️ Supprimer Toutes Les Sessions", use_container_width=True):
                 st.session_state.messages = []
                 st.warning("History cleared (UI only)")
             # --- LINES REMOVED HERE ---
             
             st.divider()
-            st.subheader("📜 History")
-            st.info("Previous chats will appear here...")
+            st.subheader("📜 Historique")
 
         # CASE 2: The "Lovely" Global Sidebar
         else:
