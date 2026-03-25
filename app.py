@@ -164,8 +164,11 @@ else:
             
             history_res = supabase.rpc("get_user_sessions", {"u_name": st.session_state.user["username"]}).execute()
             if history_res.data:
-                for chat in history_res.data:
-                    # Display the first few words of the first message as the title
+                # REVERSE the list here so the newest sessions are at the top
+                sorted_sessions = sorted(history_res.data, key=lambda x: x['created_at'], reverse=True)
+                
+                for chat in sorted_sessions:
+                    # Display the first few words of the first message
                     label = f"💬 {chat['first_msg'][:25]}..."
                     if st.button(label, key=chat['session_id'], use_container_width=True):
                         # Load specific session
