@@ -129,43 +129,47 @@ if st.session_state.step == "auth":
 elif st.session_state.step == "onboarding": 
     onboarding() 
 else: 
-    # --- SIDEBAR START --- 
+    # --- SIDEBAR LOGIC --- 
     with st.sidebar:
+        # CASE 1: The OstedhiAI Specific Sidebar
         if st.session_state.page == "chat":
-            # --- OSTEDHIAI CUSTOM SIDEBAR ---
             st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>👨🏻‍🏫 OstedhiAI</h1>", unsafe_allow_html=True)
             
             if st.button("⬅️ Go Back", use_container_width=True):
                 st.session_state.page = "dashboard"
                 st.rerun()
-
+            
             st.divider()
-
+            
             if st.button("➕ New Chat Session", use_container_width=True):
-                # We will handle the DB/State logic for new chats later
                 st.session_state.messages = []
+                # In the future, we'll add logic to create a new session_id in Supabase here
                 st.rerun()
-
+                
             if st.button("🗑️ Delete All Sessions", use_container_width=True):
-                # Placeholder for the delete logic
-                st.warning("Feature coming soon!")
-
+                # Placeholder for database deletion plumbing
+                st.session_state.messages = []
+                st.warning("History cleared (UI only)")
+            
             st.divider()
-            st.caption("CHATS RECENTES")
-            # --- Placeholder for History List ---
-            # This is where we will map through your Supabase sessions later
-            st.button("📝 Session: Algèbre...", use_container_width=True)
-            st.button("📝 Session: Physique...", use_container_width=True)
+            st.subheader("📜 History")
+            # --- MOCK HISTORY (Plumbing for real DB later) ---
+            # We will eventually pull distinct 'session_ids' or dates from chat_history
+            st.info("Previous chats will appear here...")
+            # Example placeholder:
+            # for chat in user_chats:
+            #     if st.button(f"Chat: {chat['date']}"): load_chat(chat['id'])
 
+        # CASE 2: The "Lovely" Global Sidebar
         else:
-            # --- ORIGINAL LOVELY SIDEBAR ---
             st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
             st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-
+            
             if st.button("📊 Dashboard", use_container_width=True):
                 st.session_state.page = "dashboard"
             if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
                 st.session_state.page = "chat"
+                st.rerun() # Force immediate sidebar swap
             if st.button("📝 Fichet", use_container_width=True):
                 st.session_state.page = "fichet"
             if st.button("✍️ Exercices", use_container_width=True):
@@ -175,7 +179,6 @@ else:
             if st.button("📅 Planning", use_container_width=True):
                 st.session_state.page = "planning"
 
-            # Founder Tools
             if st.session_state.user['username'] == "elyes": 
                 st.divider() 
                 st.header("🛠 Founder Tools") 
@@ -190,9 +193,7 @@ else:
                 st.session_state.user = None 
                 st.session_state.step = "auth" 
                 st.rerun() 
-            st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
-    # --- SIDEBAR END ---
-
+            st.caption("LyceeAI v1.0 | Quantara-SPMAT")
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
         st.title("📊 Dashboard")
@@ -250,62 +251,38 @@ else:
                 st.markdown("• Un écosystème personnalisé, adapté à vos besoins")
                 st.markdown("• Des ressources riches et mises à jour chaque semaine")
     elif st.session_state.page == "chat":
-        # 1. Custom Header / Navigation Bar
-        col_back, col_new, col_del = st.columns([1, 1, 1])
+        # THIS IS YOUR ORIGINAL CHATBOT CODE
+        st.title("👨🏻‍🏫 OstedhiAI") 
+        if "messages" not in st.session_state: st.session_state.messages = [] 
         
-        with col_back:
-            if st.button("⬅️ Go Back", use_container_width=True):
-                st.session_state.page = "dashboard"
-                st.rerun()
-        
-        with col_new:
-            if st.button("➕ New Chat Session", use_container_width=True):
-                st.session_state.messages = []
-                st.success("Nouvelle session démarrée")
-                st.rerun()
-                
-        with col_del:
-            if st.button("🗑️ Delete All Sessions", use_container_width=True):
-                try:
-                    supabase.table("chat_history").delete().eq("username", st.session_state.user["username"]).execute()
-                    st.session_state.messages = []
-                    st.success("Historique supprimé")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erreur: {e}")
+        for m in st.session_state.messages: 
+            with st.chat_message(m["role"]): st.markdown(m["content"]) 
 
-        st.divider()
-
-        # 2. History Section (ChatGPT Style)
-        st.subheader("📜 Historique des conversations")
-        
-        # We fetch unique sessions or recent messages to display as clickable history
-        try:
-            # Fetching the last 10 unique messages to act as 'threads'
-            hist_res = supabase.table("chat_history").select("*").eq("username", st.session_state.user["username"]).order("created_at", desc=True).limit(20).execute()
-            
-            if hist_res.data:
-                for msg in hist_res.data:
-                    # Creating a clickable button for each past message
-                    # We truncate the text to keep it clean
-                    label = f"💬 {msg['content'][:40]}..."
-                    if st.button(label, key=f"hist_{msg['id']}", use_container_width=True):
-                        # Logic to 'load' this specific context (or just scroll to it)
-                        st.info(f"Chargement de la session: {msg['content'][:20]}")
-            else:
-                st.write("Aucun historique trouvé.")
-        except Exception as e:
-            st.error("Impossible de charger l'historique.")
-
-        st.divider()
-
-        # 3. The Chat Interface (Only shows if there are active messages)
-        if st.session_state.messages:
-            for m in st.session_state.messages: 
-                with st.chat_message(m["role"]): st.markdown(m["content"]) 
-
-        # 4. Chat Input at the bottom
-        if prompt := st.chat_input("Posez une question à OstedhiAI..."): 
+        if prompt := st.chat_input("Posez une question..."): 
             st.session_state.messages.append({"role": "user", "content": prompt}) 
             supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
-            st.rerun() # Rerun to show the message immediately
+            with st.chat_message("user"): st.markdown(prompt) 
+
+            with st.chat_message("assistant"): 
+                with st.spinner("Recherche..."): 
+                    try: 
+                        q_vec = load_embed().encode(prompt).tolist() 
+                        rpc_params = { 
+                            "query_embedding": q_vec, 
+                            "match_threshold": 0.1, 
+                            "match_count": 5, 
+                            "filter_level": str(st.session_state.user['level']), 
+                            "filter_section": str(st.session_state.user['section']) 
+                        } 
+                        result = supabase.rpc("match_documents", rpc_params).execute() 
+                        context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
+                        
+                        sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
+                        history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
+                        
+                        res_text = ask_openrouter(history) 
+                        st.markdown(res_text) 
+                        st.session_state.messages.append({"role": "assistant", "content": res_text}) 
+                        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
+                    except Exception as e: 
+                        st.error(f"Erreur: {e}")
