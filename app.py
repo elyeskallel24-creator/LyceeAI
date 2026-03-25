@@ -194,6 +194,17 @@ else:
 
     elif st.session_state.page == "abonnements":
         st.title("💰 Abonnements")
+        # 1. Creating 3 columns (side-by-side spaces)
+        col1, col2, col3 = st.columns(3)
+        # 2. Putting a rounded empty box in the first column
+        with col1:
+            st.container(border=True)
+        # 3. Putting a rounded empty box in the second column
+        with col2:
+            st.container(border=True)
+        # 4. Putting a rounded empty box in the third column
+        with col3:
+            st.container(border=True)
 
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
