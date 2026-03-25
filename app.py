@@ -203,7 +203,7 @@ else:
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **LITE**", unsafe_allow_html=True)
                 st.write("OstedhiAI yefhem fil program el tounsi")
                 st.markdown("<span style='font-size: 32px; font-weight: bold;'>8dt</span> <span style='font-size: 18px; color: grey;'>/mois</span>", unsafe_allow_html=True)
-                st.markdown("• Le chatbot d'OstedhiAI est lent à répondre")
+                st.markdown("• Le chatbot d'OstedhiAI répondre à vitesse moyennee")
                 st.markdown("• OstedhiAI entraîné à répondre conformément au programme tunisien officiel")
                 st.markdown("• Accès très basique aux outils de productivité")
         # 3. Putting a rounded empty box in the second column
