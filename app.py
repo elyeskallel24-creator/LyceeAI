@@ -108,8 +108,9 @@ def auth_screen():
             res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute() 
             if res.data: 
                 st.session_state.user = res.data[0] 
-                chat_res = supabase.table("chat_history").select("*").eq("username", u).order("created_at").execute() 
-                st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in chat_res.data] 
+                # START WITH A CLEAN STATE
+                st.session_state.messages = [] 
+                st.session_state.current_session_id = None
                 st.session_state.step = "chat" 
                 st.rerun() 
             else: st.error("Inconnu.") 
