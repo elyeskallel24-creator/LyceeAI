@@ -198,13 +198,19 @@ else:
         col1, col2, col3 = st.columns(3)
         # 2. Putting a rounded empty box in the first column
         with col1:
-            st.container(border=True)
+            # Adding a title in the first empty rounded box
+            with st.container(border=True):
+                st.subheader("LyceeAI LITE")
         # 3. Putting a rounded empty box in the second column
         with col2:
-            st.container(border=True)
+            # Adding a title in the second empty rounded box
+            with st.container(border=True):
+                st.subheader("LyceeAI PLUS")
         # 4. Putting a rounded empty box in the third column
         with col3:
-            st.container(border=True)
+            # Adding a title in the third empty rounded box
+            with st.container(border=True):
+                st.subheader("LyceeAI PRO")
 
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
