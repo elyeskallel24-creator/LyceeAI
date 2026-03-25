@@ -131,48 +131,66 @@ elif st.session_state.step == "onboarding":
 else: 
     # --- SIDEBAR START --- 
     with st.sidebar:
-        # --- LOGO ---
-        st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
-        # 1. Top Section
-        st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
-        
-        # New Navigation Buttons
-        if st.button("📊 Dashboard", use_container_width=True):
-            st.session_state.page = "dashboard"
-        if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
-            st.session_state.page = "chat"
-        if st.button("📝 Fichet", use_container_width=True):
-            st.session_state.page = "fichet"
-        if st.button("✍️ Exercices", use_container_width=True):
-            st.session_state.page = "exercices"
-        if st.button("🔄 Répétition Espacée", use_container_width=True):
-            st.session_state.page = "repetition"
-        if st.button("📅 Planning", use_container_width=True):
-            st.session_state.page = "planning"
+        if st.session_state.page == "chat":
+            # --- OSTEDHIAI CUSTOM SIDEBAR ---
+            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>👨🏻‍🏫 OstedhiAI</h1>", unsafe_allow_html=True)
+            
+            if st.button("⬅️ Go Back", use_container_width=True):
+                st.session_state.page = "dashboard"
+                st.rerun()
 
-        if st.session_state.user['username'] == "elyes": 
-            st.divider() 
-            st.header("🛠 Founder Tools") 
-            if st.button("🗑 Clear Chat"): 
-                st.session_state.messages = [] 
+            st.divider()
+
+            if st.button("➕ New Chat Session", use_container_width=True):
+                # We will handle the DB/State logic for new chats later
+                st.session_state.messages = []
+                st.rerun()
+
+            if st.button("🗑️ Delete All Sessions", use_container_width=True):
+                # Placeholder for the delete logic
+                st.warning("Feature coming soon!")
+
+            st.divider()
+            st.caption("CHATS RECENTES")
+            # --- Placeholder for History List ---
+            # This is where we will map through your Supabase sessions later
+            st.button("📝 Session: Algèbre...", use_container_width=True)
+            st.button("📝 Session: Physique...", use_container_width=True)
+
+        else:
+            # --- ORIGINAL LOVELY SIDEBAR ---
+            st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
+            st.markdown(f"### 🌶️ Aslema **{st.session_state.user['username']}** !") 
+
+            if st.button("📊 Dashboard", use_container_width=True):
+                st.session_state.page = "dashboard"
+            if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
+                st.session_state.page = "chat"
+            if st.button("📝 Fichet", use_container_width=True):
+                st.session_state.page = "fichet"
+            if st.button("✍️ Exercices", use_container_width=True):
+                st.session_state.page = "exercices"
+            if st.button("🔄 Répétition Espacée", use_container_width=True):
+                st.session_state.page = "repetition"
+            if st.button("📅 Planning", use_container_width=True):
+                st.session_state.page = "planning"
+
+            # Founder Tools
+            if st.session_state.user['username'] == "elyes": 
+                st.divider() 
+                st.header("🛠 Founder Tools") 
+                admin_uploader() 
+
+            for _ in range(8): st.write("")
+            st.divider()
+            
+            if st.button("💰 Abonnements", use_container_width=True):
+                st.session_state.page = "abonnements"
+            if st.button("🚪 Déconnexion", use_container_width=True): 
+                st.session_state.user = None 
+                st.session_state.step = "auth" 
                 st.rerun() 
-            admin_uploader() 
-
-        # 2. THE SPACER
-        # Reduced from 20 to 8 because the new buttons take up vertical space
-        for _ in range(8):
-            st.write("")
-
-        # 3. Bottom Section
-        st.divider()
-        if st.button("💰 Abonnements", use_container_width=True):
-            st.session_state.page = "abonnements"
-        if st.button("🚪 Déconnexion", use_container_width=True): 
-            st.session_state.user = None 
-            st.session_state.messages = [] 
-            st.session_state.step = "auth" 
-            st.rerun() 
-        st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
+            st.caption("LyceeAI v1.0 | Quantara-SPMAT") 
     # --- SIDEBAR END ---
 
     # --- PAGE ROUTING ---
