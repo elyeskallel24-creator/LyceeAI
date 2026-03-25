@@ -213,7 +213,7 @@ else:
             # Adding a title in the third empty rounded box
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PRO**", unsafe_allow_html=True)
-                st.write("Accès kemel lmizet LyceeAI")
+                st.write("LITE + PLUS + Accès kemel lmizet LyceeAI lkol + AI asra3 et mémoire akber")
 
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
