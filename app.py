@@ -203,7 +203,9 @@ else:
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **LITE**", unsafe_allow_html=True)
                 st.write("OstedhiAI yefhem fil program el tounsi")
                 st.markdown("<span style='font-size: 32px; font-weight: bold;'>8dt</span> <span style='font-size: 18px; color: grey;'>/mois</span>", unsafe_allow_html=True)
-                st.markdown("• Limited slow Chat bot in ostedhi AI")
+                st.markdown("• Le chatbot d'OstedhiAI est lent à répondre")
+                st.markdown("• OstedhiAI entraîné à répondre conformément au programme tunisien officiel")
+                st.markdown("• Accès très basique aux outils de productivité")
         # 3. Putting a rounded empty box in the second column
         with col2:
             # Adding a title in the second empty rounded box
@@ -211,6 +213,11 @@ else:
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PLUS**", unsafe_allow_html=True)
                 st.write("LITE + OstedhiAI yjewbek asra3 + historique akber")
                 st.markdown("<span style='font-size: 32px; font-weight: bold;'>26dt</span> <span style='font-size: 18px; color: grey;'>/mois</span>", unsafe_allow_html=True)
+                st.markdown("• Le chatbot d'OsedhiAI répond plus rapidement")
+                st.markdown("• OstedhiAI entraîné à répondre conformément au programme tunisien officiel")
+                st.markdown("• Accès à des outils de productivité rapides")
+                st.markdown("• Écosystème LyceeAI")
+                st.markdown("• mémoire étendue et expérience personnalisée")
         # 4. Putting a rounded empty box in the third column
         with col3:
             # Adding a title in the third empty rounded box
@@ -218,6 +225,12 @@ else:
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PRO**", unsafe_allow_html=True)
                 st.write("LITE + PLUS + Accès kemel lmizet LyceeAI lkol + AI a9wa (mémoire et vitesse)")
                 st.markdown("<span style='font-size: 32px; font-weight: bold;'>125dt</span> <span style='font-size: 18px; color: grey;'>/mois</span>", unsafe_allow_html=True)
+                st.markdown("• OstedhiAI répond de manière plus détaillée et plus rapide que tous les autres forfaits.")
+                st.markdown("• OstedhiAI entraîné à répondre conformément au programme tunisien officiel")
+                st.markdown("• Accès à de nombreux outils de productivité avancés et rapides")
+                st.markdown("• Mémoire étendue liée à l'écosystème LyceeAI")
+                st.markdown("• Un écosystème personnalisé, adapté à vos besoins")
+                st.markdoow("• Des ressources riches et mises à jour chaque semaine")
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
         st.title("👨🏻‍🏫 OstedhiAI") 
