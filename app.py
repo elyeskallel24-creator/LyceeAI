@@ -197,9 +197,22 @@ else:
         # Injecting the "Equal Height" fix
         st.markdown("""
             <style>
-            div[data-testid="stColumn"] > div > div[data-testid="stVerticalBlockBorderWrapper"] {
+            /* Target the container inside the column to force it to fill height */
+            div[data-testid="stColumn"] > div {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            /* Target the border wrapper specifically */
+            div[data-testid="stVerticalBlockBorderWrapper"] {
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
                 height: 100% !important;
-                min-height: 550px; /* Optional: sets a minimum height so they don't look squashed on small screens */
+            }
+            /* Ensure the inner block also stretches */
+            div[data-testid="stVerticalBlockBorderWrapper"] > div {
+                flex-grow: 1;
             }
             </style>
             """, unsafe_allow_html=True)
