@@ -207,13 +207,13 @@ else:
             # Adding a title in the second empty rounded box
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PLUS**", unsafe_allow_html=True)
-                st.write("OstedhiAI yjewbek asra3 + historique akber")
+                st.write("LITE + OstedhiAI yjewbek asra3 + historique akber")
         # 4. Putting a rounded empty box in the third column
         with col3:
             # Adding a title in the third empty rounded box
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **PRO**", unsafe_allow_html=True)
-                st.write("LITE + PLUS + Accès kemel lmizet LyceeAI lkol + AI asra3 et mémoire akber")
+                st.write("LITE + PLUS + Accès kemel lmizet LyceeAI lkol + AI a9wa (mémoire et vitesse)")
 
     elif st.session_state.page == "chat":
         # THIS IS YOUR ORIGINAL CHATBOT CODE
