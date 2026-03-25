@@ -139,26 +139,19 @@ else:
                 st.session_state.page = "dashboard"
                 st.rerun()
             
-            st.divider()
-            
+            # --- LINES REMOVED HERE ---
             if st.button("➕ New Chat Session", use_container_width=True):
                 st.session_state.messages = []
-                # In the future, we'll add logic to create a new session_id in Supabase here
                 st.rerun()
                 
             if st.button("🗑️ Delete All Sessions", use_container_width=True):
-                # Placeholder for database deletion plumbing
                 st.session_state.messages = []
                 st.warning("History cleared (UI only)")
+            # --- LINES REMOVED HERE ---
             
             st.divider()
             st.subheader("📜 History")
-            # --- MOCK HISTORY (Plumbing for real DB later) ---
-            # We will eventually pull distinct 'session_ids' or dates from chat_history
             st.info("Previous chats will appear here...")
-            # Example placeholder:
-            # for chat in user_chats:
-            #     if st.button(f"Chat: {chat['date']}"): load_chat(chat['id'])
 
         # CASE 2: The "Lovely" Global Sidebar
         else:
@@ -169,7 +162,7 @@ else:
                 st.session_state.page = "dashboard"
             if st.button("👨🏻‍🏫 OstedhiAI", use_container_width=True):
                 st.session_state.page = "chat"
-                st.rerun() # Force immediate sidebar swap
+                st.rerun() 
             if st.button("📝 Fichet", use_container_width=True):
                 st.session_state.page = "fichet"
             if st.button("✍️ Exercices", use_container_width=True):
