@@ -202,7 +202,7 @@ else:
             with st.container(border=True):
                 st.markdown("### <span style='font-weight: normal; color: grey;'>LyceeAI</span> **LITE**", unsafe_allow_html=True)
                 st.write("OstedhiAI yefhem fil program el tounsi")
-                st.markdown("### 8dt <span style='font-size: 18px; color: grey; font-weight: normal;'>/month</span>", unsafe_allow_html=True)
+                st.markdown("<span style='font-size: 32px; font-weight: bold;'>8dt</span> <span style='font-size: 18px; color: grey;'>/month</span>", unsafe_allow_html=True)
         # 3. Putting a rounded empty box in the second column
         with col2:
             # Adding a title in the second empty rounded box
