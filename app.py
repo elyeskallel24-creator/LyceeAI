@@ -5,7 +5,8 @@ import requests
 import json 
 import time 
 from io import BytesIO 
-import pypdf 
+import pypdf
+import uuid
 
 # --- PAGE CONFIG --- 
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide") 
@@ -128,7 +129,10 @@ if st.session_state.step == "auth":
     auth_screen() 
 elif st.session_state.step == "onboarding": 
     onboarding() 
-else: 
+else:
+    # Initialize session tracking
+    if "current_session_id" not in st.session_state:
+        st.session_state.current_session_id = None
     # --- SIDEBAR LOGIC --- 
     with st.sidebar:
         # CASE 1: The OstedhiAI Specific Sidebar
@@ -142,16 +146,34 @@ else:
             # --- LINES REMOVED HERE ---
             if st.button("➕ Nouvelle Session De Chat", use_container_width=True):
                 st.session_state.messages = []
+                st.session_state.current_session_id = None
                 st.rerun()
                 
             if st.button("🗑️ Supprimer Toutes Les Sessions", use_container_width=True):
+                # Filter by username so they only delete THEIR OWN stuff
+                supabase.table("chat_history").delete().eq("username", st.session_state.user["username"]).execute()
                 st.session_state.messages = []
-                st.warning("History cleared (UI only)")
+                st.session_state.current_session_id = None
+                st.success("Historique supprimé !")
+                st.rerun()
             # --- LINES REMOVED HERE ---
             
             st.divider()
             st.subheader("📜 Historique")
-
+            
+            history_res = supabase.rpc("get_user_sessions", {"u_name": st.session_state.user["username"]}).execute()
+            if history_res.data:
+                for chat in history_res.data:
+                    # Display the first few words of the first message as the title
+                    label = f"💬 {chat['first_msg'][:25]}..."
+                    if st.button(label, key=chat['session_id'], use_container_width=True):
+                        # Load specific session
+                        msgs = supabase.table("chat_history").select("*").eq("session_id", chat['session_id']).order("created_at").execute()
+                        st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in msgs.data]
+                        st.session_state.current_session_id = chat['session_id']
+                        st.rerun()
+            else:
+                st.caption("Aucune session trouvée.")
         # CASE 2: The "Lovely" Global Sidebar
         else:
             st.markdown("<h1 style='color: white; text-align: left; font-size: 33px; '>🇹🇳 LyceeAI</h1>", unsafe_allow_html=True)
@@ -251,30 +273,45 @@ else:
             with st.chat_message(m["role"]): st.markdown(m["content"]) 
 
         if prompt := st.chat_input("Posez une question..."): 
+            # 1. GENERATE SESSION ID IF NEW CHAT
+            if st.session_state.current_session_id is None:
+                st.session_state.current_session_id = str(uuid.uuid4())
+
+            # 2. SAVE USER MESSAGE WITH SESSION_ID
             st.session_state.messages.append({"role": "user", "content": prompt}) 
-            supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "user", "content": prompt}).execute() 
             with st.chat_message("user"): st.markdown(prompt) 
+            
+            supabase.table("chat_history").insert({
+                "username": st.session_state.user["username"], 
+                "session_id": st.session_state.current_session_id, # <--- CRITICAL
+                "role": "user", 
+                "content": prompt
+            }).execute() 
 
             with st.chat_message("assistant"): 
                 with st.spinner("Recherche..."): 
                     try: 
+                        # ... (your existing vector search code) ...
                         q_vec = load_embed().encode(prompt).tolist() 
-                        rpc_params = { 
-                            "query_embedding": q_vec, 
-                            "match_threshold": 0.1, 
-                            "match_count": 5, 
-                            "filter_level": str(st.session_state.user['level']), 
-                            "filter_section": str(st.session_state.user['section']) 
-                        } 
+                        # ... (your existing rpc_params code) ...
+                        
+                        # (Keep your existing search/AI logic here)
                         result = supabase.rpc("match_documents", rpc_params).execute() 
                         context = "\n".join([item['retrieved_content'] for item in result.data]) if result.data else "Pas de contexte." 
-                        
                         sys_msg = f"Tu es LyceeAI. Élève: {st.session_state.user['level']}. Méthode: {st.session_state.user['teaching_method']}. Contexte: {context}" 
                         history = [{"role": "system", "content": sys_msg}] + st.session_state.messages[-4:] 
                         
                         res_text = ask_openrouter(history) 
                         st.markdown(res_text) 
+
+                        # 3. SAVE ASSISTANT MESSAGE WITH SESSION_ID
                         st.session_state.messages.append({"role": "assistant", "content": res_text}) 
-                        supabase.table("chat_history").insert({"username": st.session_state.user["username"], "role": "assistant", "content": res_text}).execute() 
+                        supabase.table("chat_history").insert({
+                            "username": st.session_state.user["username"], 
+                            "session_id": st.session_state.current_session_id, # <--- CRITICAL
+                            "role": "assistant", 
+                            "content": res_text
+                        }).execute() 
+                        
                     except Exception as e: 
                         st.error(f"Erreur: {e}")
