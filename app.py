@@ -99,31 +99,67 @@ def admin_uploader():
             st.success("Terminé !") 
 
 # --- AUTH UI --- 
-def auth_screen(): 
-    tab1, tab2 = st.tabs(["Se connecter", "S'inscrire"]) 
-    with tab1: 
+def auth_screen():
+    # Initialize a local state to track which form to show
+    if "auth_view" not in st.session_state:
+        st.session_state.auth_view = "landing"
+
+    # 1. LANDING VIEW (The two buttons)
+    if st.session_state.auth_view == "landing":
+        st.markdown("<h1 style='text-align: center; color: white; font-size: 80px; margin-bottom: 0px;'>LyceeAI</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: grey; font-size: 20px;'>L'excellence académique à portée de clic.</p>", unsafe_allow_html=True)
+        
+        st.write("") # Spacer
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✨ S'inscrire", use_container_width=True):
+                st.session_state.auth_view = "signup"
+                st.rerun()
+        with col2:
+            if st.button("🔑 Se connecter", use_container_width=True):
+                st.session_state.auth_view = "login"
+                st.rerun()
+
+    # 2. LOGIN VIEW
+    elif st.session_state.auth_view == "login":
+        st.subheader("Connexion")
         u = st.text_input("Utilisateur", key="l_u") 
         p = st.text_input("Password", type="password", key="l_p") 
-        if st.button("Entrer"): 
-            res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute() 
-            if res.data: 
-                st.session_state.user = res.data[0] 
-                # START WITH A CLEAN STATE
-                st.session_state.messages = [] 
-                st.session_state.current_session_id = None
-                st.session_state.step = "chat" 
-                st.rerun() 
-            else: st.error("Inconnu.") 
-    with tab2: 
+        col_btn1, col_btn2 = st.columns([1, 4])
+        with col_btn1:
+            if st.button("Entrer"): 
+                res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute() 
+                if res.data: 
+                    st.session_state.user = res.data[0] 
+                    st.session_state.messages = [] 
+                    st.session_state.current_session_id = None
+                    st.session_state.step = "chat" 
+                    st.rerun() 
+                else: st.error("Inconnu.") 
+        with col_btn2:
+            if st.button("🔙 Retour"):
+                st.session_state.auth_view = "landing"
+                st.rerun()
+
+    # 3. SIGNUP VIEW
+    elif st.session_state.auth_view == "signup":
+        st.subheader("Créer un compte")
         nu = st.text_input("Nouvel Utilisateur", key="s_u") 
         np = st.text_input("Nouveau Password", type="password", key="s_p") 
         cp = st.text_input("Confirmer", type="password", key="s_c") 
-        if st.button("Créer"): 
-            if 3<=len(nu)<=15 and len(np)>=8 and np==cp: 
-                st.session_state.temp_user = {"username": nu, "password": np} 
-                st.session_state.step = "onboarding" 
+        
+        col_btn3, col_btn4 = st.columns([1, 4])
+        with col_btn3:
+            if st.button("Suivant"): 
+                if 3<=len(nu)<=15 and len(np)>=8 and np==cp: 
+                    st.session_state.temp_user = {"username": nu, "password": np} 
+                    st.session_state.step = "onboarding" 
+                    st.rerun() 
+                else: st.error("Invalide (Nom: 3-15 chars, Pass: 8+ chars).")
+        with col_btn4:
+            if st.button("🔙 Retour"):
+                st.session_state.auth_view = "landing"
                 st.rerun() 
-            else: st.error("Invalide.") 
 
 # --- MAIN APP LOGIC --- 
 if st.session_state.step == "auth": 
