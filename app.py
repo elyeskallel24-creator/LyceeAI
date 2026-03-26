@@ -145,23 +145,29 @@ def auth_screen():
 
     # 3. SIGNUP VIEW
     elif st.session_state.auth_view == "signup":
-        st.subheader("Créer un compte")
-        nu = st.text_input("Nouvel Utilisateur", key="s_u") 
-        np = st.text_input("Nouveau Password", type="password", key="s_p") 
-        cp = st.text_input("Confirmer", type="password", key="s_c") 
+        st.markdown("<h3 style='text-align: center;'>Créer un compte</h3>", unsafe_allow_html=True)
         
-        col_btn3, col_btn4 = st.columns([1, 4])
-        with col_btn3:
-            if st.button("Suivant"): 
-                if 3<=len(nu)<=15 and len(np)>=8 and np==cp: 
-                    st.session_state.temp_user = {"username": nu, "password": np} 
-                    st.session_state.step = "onboarding" 
+        # Creating a centered layout for smaller boxes
+        _, signup_col, _ = st.columns([1, 1.5, 1])
+        
+        with signup_col:
+            nu = st.text_input("Nouvel Utilisateur", key="s_u") 
+            np = st.text_input("Nouveau Password", type="password", key="s_p") 
+            cp = st.text_input("Confirmer", type="password", key="s_c") 
+            
+            st.write("") # Small spacer
+            col_btn3, col_btn4 = st.columns([1, 1])
+            with col_btn3:
+                if st.button("Suivant", use_container_width=True): 
+                    if 3<=len(nu)<=15 and len(np)>=8 and np==cp: 
+                        st.session_state.temp_user = {"username": nu, "password": np} 
+                        st.session_state.step = "onboarding" 
+                        st.rerun() 
+                    else: st.error("Invalide (Nom: 3-15 chars, Pass: 8+ chars).")
+            with col_btn4:
+                if st.button("🔙 Retour", use_container_width=True):
+                    st.session_state.auth_view = "landing"
                     st.rerun() 
-                else: st.error("Invalide (Nom: 3-15 chars, Pass: 8+ chars).")
-        with col_btn4:
-            if st.button("🔙 Retour"):
-                st.session_state.auth_view = "landing"
-                st.rerun() 
 
 # --- MAIN APP LOGIC --- 
 if st.session_state.step == "auth": 
