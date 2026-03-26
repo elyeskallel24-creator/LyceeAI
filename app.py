@@ -40,39 +40,44 @@ if "page" not in st.session_state:
     st.session_state.page = "chat"
 # --- ONBOARDING --- 
 def onboarding(): 
-    st.header("🎯 Personnalisez votre expérience") 
-    level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"]) 
+    st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
     
-    if "1ère" in level: 
-        section = st.radio("Section", ["Générale", "Sport"]) 
-    else: 
-        section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"]) 
-
-    st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)") 
-    method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis.") 
+    # Creating a centered layout
+    _, onboard_col, _ = st.columns([1, 1.5, 1])
     
-    char_count = len(method) 
-    st.caption(f"Caractères: {char_count}/150") 
-
-    if st.button("Finaliser l'inscription"): 
-        if 80 <= char_count <= 150: 
-            user_data = { 
-                "username": st.session_state.temp_user["username"], 
-                "password": st.session_state.temp_user["password"], 
-                "level": level, 
-                "section": section, 
-                "teaching_method": method 
-            } 
-            try: 
-                supabase.table("users_profile").insert(user_data).execute() 
-                st.session_state.user = user_data 
-                st.session_state.step = "chat" 
-                st.success("Compte créé !") 
-                st.rerun() 
-            except Exception as e: 
-                st.error(f"Erreur: {e}") 
+    with onboard_col:
+        level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"]) 
+        
+        if "1ère" in level: 
+            section = st.radio("Section", ["Générale", "Sport"]) 
         else: 
-            st.warning(f"Description trop courte ou trop longue ({char_count}).") 
+            section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"]) 
+
+        st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)") 
+        method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis.") 
+        
+        char_count = len(method) 
+        st.caption(f"Caractères: {char_count}/150") 
+
+        if st.button("Finaliser l'inscription", use_container_width=True): 
+            if 80 <= char_count <= 150: 
+                user_data = { 
+                    "username": st.session_state.temp_user["username"], 
+                    "password": st.session_state.temp_user["password"], 
+                    "level": level, 
+                    "section": section, 
+                    "teaching_method": method 
+                } 
+                try: 
+                    supabase.table("users_profile").insert(user_data).execute() 
+                    st.session_state.user = user_data 
+                    st.session_state.step = "chat" 
+                    st.success("Compte créé !") 
+                    st.rerun() 
+                except Exception as e: 
+                    st.error(f"Erreur: {e}") 
+            else: 
+                st.warning(f"Description trop courte ou trop longue ({char_count}).") 
 
 # --- UPLOADER --- 
 def admin_uploader(): 
