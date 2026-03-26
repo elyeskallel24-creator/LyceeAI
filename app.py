@@ -129,24 +129,32 @@ def auth_screen():
 
     # 2. LOGIN VIEW
     elif st.session_state.auth_view == "login":
-        st.subheader("Connexion")
-        u = st.text_input("Utilisateur", key="l_u") 
-        p = st.text_input("Password", type="password", key="l_p") 
-        col_btn1, col_btn2 = st.columns([1, 4])
-        with col_btn1:
-            if st.button("Entrer"): 
-                res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute() 
-                if res.data: 
-                    st.session_state.user = res.data[0] 
-                    st.session_state.messages = [] 
-                    st.session_state.current_session_id = None
-                    st.session_state.step = "chat" 
-                    st.rerun() 
-                else: st.error("Inconnu.") 
-        with col_btn2:
-            if st.button("🔙 Retour"):
-                st.session_state.auth_view = "landing"
-                st.rerun()
+        st.markdown("<h3 style='text-align: center;'>Connexion</h3>", unsafe_allow_html=True)
+        
+        # Creating a centered layout for a compact look
+        _, login_col, _ = st.columns([1, 1.5, 1])
+        
+        with login_col:
+            u = st.text_input("Utilisateur", key="l_u") 
+            p = st.text_input("Password", type="password", key="l_p") 
+            
+            st.write("") # Small spacer
+            col_btn1, col_btn2 = st.columns([1, 1])
+            with col_btn1:
+                if st.button("Entrer", use_container_width=True): 
+                    res = supabase.table("users_profile").select("*").eq("username", u).eq("password", p).execute() 
+                    if res.data: 
+                        st.session_state.user = res.data[0] 
+                        st.session_state.messages = [] 
+                        st.session_state.current_session_id = None
+                        st.session_state.step = "chat" 
+                        st.rerun() 
+                    else: 
+                        st.error("Inconnu.") 
+            with col_btn2:
+                if st.button("🔙 Retour", use_container_width=True):
+                    st.session_state.auth_view = "landing"
+                    st.rerun()
 
     # 3. SIGNUP VIEW
     elif st.session_state.auth_view == "signup":
