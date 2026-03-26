@@ -110,12 +110,14 @@ def auth_screen():
         st.markdown("<p style='text-align: center; color: grey; font-size: 20px;'>L'excellence académique à portée de clic.</p>", unsafe_allow_html=True)
         
         st.write("") # Spacer
-        col1, col2 = st.columns(2)
-        with col1:
+        
+        # Centering the buttons vertically by using a narrower column layout or just stacking them
+        _, center_col, _ = st.columns([1, 2, 1])
+        with center_col:
             if st.button("✨ S'inscrire", use_container_width=True):
                 st.session_state.auth_view = "signup"
                 st.rerun()
-        with col2:
+            
             if st.button("🔑 Se connecter", use_container_width=True):
                 st.session_state.auth_view = "login"
                 st.rerun()
