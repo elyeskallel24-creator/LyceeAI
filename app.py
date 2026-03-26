@@ -145,15 +145,15 @@ def auth_screen():
 
     # 3. SIGNUP VIEW
     elif st.session_state.auth_view == "signup":
-        st.markdown("<h3 style='text-align: center;'>Créer un compte</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='text-align: center;'>Lbideya tebda min taw !</h3>", unsafe_allow_html=True)
         
         # Creating a centered layout for smaller boxes
         _, signup_col, _ = st.columns([1, 1.5, 1])
         
         with signup_col:
-            nu = st.text_input("Nouvel Utilisateur", key="s_u") 
-            np = st.text_input("Nouveau Password", type="password", key="s_p") 
-            cp = st.text_input("Confirmer", type="password", key="s_c") 
+            nu = st.text_input("E5tar esm", key="s_u") 
+            np = st.text_input("mot de passe 3ala kifik", type="password", key="s_p") 
+            cp = st.text_input("Confirmi lmot de pasee mte3ek", type="password", key="s_c") 
             
             st.write("") # Small spacer
             col_btn3, col_btn4 = st.columns([1, 1])
