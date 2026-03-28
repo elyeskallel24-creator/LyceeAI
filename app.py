@@ -273,7 +273,8 @@ else:
             if st.button("💰 Abonnements", use_container_width=True):
                 st.session_state.page = "abonnements"
             if st.button("🚪 Déconnexion", use_container_width=True): 
-                st.session_state.user = None 
+                st.session_state.user = None
+                st.session_state.auth_view = "landing"
                 st.session_state.step = "auth" 
                 st.rerun() 
             st.caption("LyceeAI v1.0")
