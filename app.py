@@ -37,7 +37,7 @@ if "user" not in st.session_state:
 if "step" not in st.session_state: 
     st.session_state.step = "auth" 
 if "page" not in st.session_state:
-    st.session_state.page = "chat"
+    st.session_state.page = "dashboard"
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
