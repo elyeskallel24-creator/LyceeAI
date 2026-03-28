@@ -49,10 +49,16 @@ def onboarding():
         level = st.selectbox("Choisissez votre niveau", ["1ère année secondaire", "4ème année (Baccalauréat)"]) 
         
         if "1ère" in level: 
-            section = st.radio("Section", ["Générale", "Sport"]) 
+            section = st.radio("Section", ["Générale", "Sport"])
+            optional_subject = "Aucune" # No option for 1st year
         else: 
             section = st.radio("Section", ["Mathématiques", "Sciences Exp", "Économie", "Technique", "Lettre", "Sport", "Informatique"]) 
-
+            # New dropdown for Bac students
+            optional_subject = st.selectbox("Matière optionnelle", [
+                "Italien", "Espagnol", "Allemand", "Chinois", "Turc",
+                "Russe", "Portugais", "Arts Plastiques", "Musique",
+                "Théâtre", "Éducation Physique"
+            ])
         st.write("Décrivez votre méthode d'apprentissage (80-150 caractères)") 
         method = st.text_area("Ex: Je veux des résumés courts suivis d'exercices d'application directs.", help="Soyez précis.") 
         
