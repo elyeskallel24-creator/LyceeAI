@@ -7,6 +7,8 @@ import time
 from io import BytesIO 
 import pypdf
 import uuid
+import plotly.express as px
+import pandas as pd
 
 # --- PAGE CONFIG --- 
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide") 
@@ -19,7 +21,37 @@ supabase = create_client(url, key)
 
 @st.cache_resource 
 def load_embed(): 
-    return SentenceTransformer('all-MiniLM-L6-v2') 
+    return SentenceTransformer('all-MiniLM-L6-v2')
+
+def get_user_subjects(user):
+    lvl = user.get('level', '')
+    sec = user.get('section', '')
+    opt = user.get('optional_subject', 'Aucune') # Default to None if not found
+
+    if "1ère" in lvl:
+        subjects = ["Arabe", "Français", "Anglais", "Histoire", "Géographie", "Éducation Islamique", "Mathématiques", "SVT", "Physique", "Technologie", "Informatique"]
+        if "Sport" in sec:
+            subjects += ["EPS", "Culture Sportive"]
+    elif "4ème" in lvl:
+        if "Math" in sec or "Sciences Exp" in sec:
+            subjects = ["Mathématiques", "Physique", "SVT", "Arabe", "Français", "Anglais", "Informatique"]
+        elif "Économie" in sec:
+            subjects = ["Mathématiques", "Gestion", "Économie", "Anglais", "Arabe", "Français", "Histoire", "Géographie", "Philosophie"]
+        elif "Technique" in sec:
+            subjects = ["Mathématiques", "Dis.techniques", "Sciences", "Anglais", "Arabe", "Français", "Philosophie"]
+        elif "Lettre" in sec:
+            subjects = ["Arabe", "Français", "Anglais", "Histoire", "Géographie", "Philosophie", "Pensée islamique"]
+        elif "Sport" in sec:
+            subjects = ["Mathématiques", "Physique", "SVT", "Anglais", "Arabe", "Français", "Philosophie", "Sport"]
+        elif "Informatique" in sec:
+            subjects = ["Mathématiques", "Physique", "Anglais", "Arabe", "Français", "Philosophie", "Algorithmes", "Bases de données"]
+        
+        if opt != "Aucune":
+            subjects.append(opt)
+    else:
+        subjects = ["Général"]
+    
+    return list(set(subjects)) # Remove duplicates if any
 
 def ask_openrouter(messages): 
     endpoint = "https://openrouter.ai/api/v1/chat/completions" 
@@ -280,8 +312,38 @@ else:
             st.caption("LyceeAI v1.0")
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
-        st.title("📊 Dashboard")
-        st.header("Coming soon...⌛")
+        st.markdown(f"## 🚀 Learning Pulse : {st.session_state.user['username']}")
+        
+        # Get subjects based on their profile
+        user_subjects = get_user_subjects(st.session_state.user)
+        
+        # For now, we generate random "Power" levels (0 to 100)
+        # Later, we can link this to how many questions they ask in OstedhiAI
+        import random
+        scores = [random.randint(30, 95) for _ in user_subjects]
+        
+        df = pd.DataFrame(dict(r=scores, theta=user_subjects))
+        
+        col_chart, col_stats = st.columns([2, 1])
+        
+        with col_chart:
+            fig = px.line_polar(df, r='r', theta='theta', line_close=True, range_r=[0,100],
+                               template="plotly_dark", color_discrete_sequence=['#00FFAA'])
+            fig.update_fills(fill='toself')
+            fig.update_layout(margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with col_stats:
+            st.markdown("### 📈 Analyse")
+            weakest = df.loc[df['r'].idxmin()]
+            strongest = df.loc[df['r'].idxmax()]
+            
+            st.success(f"**Point fort:** {strongest['theta']}")
+            st.warning(f"**À réviser:** {weakest['theta']}")
+            
+            if st.button("Générer un plan de révision", use_container_width=True):
+                st.session_state.page = "planning"
+                st.rerun()
 
     elif st.session_state.page == "fichet":
         st.title("📝 Fichet")
