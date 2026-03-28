@@ -72,7 +72,7 @@ def onboarding():
                     supabase.table("users_profile").insert(user_data).execute() 
                     st.session_state.user = user_data 
                     st.session_state.page = "dashboard" # Set landing page
-                        st.session_state.step = "main" # Move to main app logic
+                    st.session_state.step = "main" # Move to main app logic
                     st.success("Compte créé !") 
                     st.rerun() 
                 except Exception as e: 
