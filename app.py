@@ -270,7 +270,7 @@ else:
                 st.session_state.user = None 
                 st.session_state.step = "auth" 
                 st.rerun() 
-            st.caption("LyceeAI v1.0 | Quantara-SPMAT")
+            st.caption("LyceeAI v1.0")
     # --- PAGE ROUTING ---
     if st.session_state.page == "dashboard":
         st.title("📊 Dashboard")
