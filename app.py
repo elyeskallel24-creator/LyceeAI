@@ -71,7 +71,8 @@ def onboarding():
                 try: 
                     supabase.table("users_profile").insert(user_data).execute() 
                     st.session_state.user = user_data 
-                    st.session_state.step = "chat" 
+                    st.session_state.page = "dashboard" # Set landing page
+                        st.session_state.step = "main" # Move to main app logic
                     st.success("Compte créé !") 
                     st.rerun() 
                 except Exception as e: 
@@ -147,7 +148,8 @@ def auth_screen():
                         st.session_state.user = res.data[0] 
                         st.session_state.messages = [] 
                         st.session_state.current_session_id = None
-                        st.session_state.step = "chat" 
+                        st.session_state.page = "dashboard" # Ensure page is set to dashboard
+                        st.session_state.step = "main" # Move to main app logic 
                         st.rerun() 
                     else: 
                         st.error("Inconnu.") 
