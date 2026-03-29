@@ -56,15 +56,15 @@ def diagnostic_survey():
 
     # --- STEP 1: GENDER SELECTION ---
     if st.session_state.diag_step == 1:
-        st.subheader("Choisissez votre forme d'adresse / اختر صيغة الخطاب")
+        st.subheader("Choisissez votre forme d'adresse")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Masculin / ذكر", use_container_width=True):
+            if st.button("Masculin", use_container_width=True):
                 st.session_state.user_gender = "male"
                 st.session_state.diag_step += 1
                 st.rerun()
         with col2:
-            if st.button("Féminin / أنثى", use_container_width=True):
+            if st.button("Féminin", use_container_width=True):
                 st.session_state.user_gender = "female"
                 st.session_state.diag_step += 1
                 st.rerun()
@@ -78,33 +78,43 @@ def diagnostic_survey():
             st.session_state.diag_step += 1
             st.rerun()
 
-    # --- STEP 3+: ELITE AUDIT ENGINE ---
+    # --- STEP 3: DEADLINE / END GOAL (MANDATORY) ---
+    elif st.session_state.diag_step == 3:
+        labels = {
+            "Français": "Quelle est la date précise de votre objectif final (examen) ?",
+            "العربية": "ما هو التاريخ المحدد لهدفك النهائي (الامتحان)؟",
+            "English": "What is the exact date of your final goal (exam)?"
+        }
+        st.subheader(labels.get(st.session_state.user_lang, labels["English"]))
+        deadline = st.date_input("Date")
+        if st.button("Valider la date", use_container_width=True):
+            st.session_state.diag_answers.append({"q": "Deadline", "a": str(deadline)})
+            st.session_state.diag_step += 1
+            st.rerun()
+
+    # --- STEP 4+: DYNAMIC AI QUESTIONS ---
     else:
         if f"q_{st.session_state.diag_step}" not in st.session_state:
             past_questions = [f"Q: {ans['q']} | A: {ans['a']}" for ans in st.session_state.diag_answers]
-            gender_instr = "Masculine" if st.session_state.user_gender == "male" else "Feminine"
             
-            # Special instruction for the 3rd step (The Deadline)
-            step_3_logic = ""
-            if st.session_state.diag_step == 3:
-                step_3_logic = "MANDATORY: Your first objective is to determine the exact date of the final objective/exams to calculate the runway."
-
+            # Strict Language Handling
+            lang_instruction = {
+                "Français": "Talk ONLY in very simple, clear French. No complex words.",
+                "العربية": "Talk ONLY in very simple, clear Arabic (Fusha or simple Tunisian). No complex words.",
+                "English": "Talk ONLY in very simple, clear English. No complex words."
+            }
+            
             context_prompt = [
                 {
                     "role": "system", 
                     "content": (
-                        f"You are a Master Academic Architect. Language: {st.session_state.user_lang}. "
-                        f"Tone: Extremely formal, clinical, and authoritative. Use sophisticated vocabulary and rhetorical redundancy. "
-                        f"Constraint: NO introductions. NO 'I am a psychologist'. Jump IMMEDIATELY to the question. "
-                        f"Language Lock: You MUST speak ONLY in {st.session_state.user_lang}. If the user replies in another language, ignore it and continue in {st.session_state.user_lang}. "
-                        f"Grammar: {gender_instr}. "
-                        "\nCORE STRATEGY: Conduct a high-stakes academic audit. "
-                        f"{step_3_logic}"
-                        "\nAUDIT PILLARS: "
-                        "1. METRICS: Exact dates, hours available, and numerical burnout levels. "
-                        "2. PSYCHOLOGY: Locus of control, environmental friction, and dopamine baseline. "
-                        "3. CAPACITY: Chronobiology (peak focus) and cognitive load per subject. "
-                        "\nINSTRUCTIONS: Ask ONLY ONE direct, high-impact question. Use formal redundancy (e.g., 'Veuillez décliner avec une précision chirurgicale et une exhaustivité totale...'). "
+                        f"You are an Elite Academic Planner. Your mission is to extract data to build a top-notch plan. "
+                        f"Target Level: {st.session_state.temp_user_profile_data['level']}. "
+                        f"Target Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
+                        f"Constraint: DO NOT introduce yourself. DO NOT say 'I am a psychologist'. "
+                        f"Constraint: Ask ONLY one direct, short, and concise question. "
+                        f"Focus: Metrics, Psychology, Friction, and Capacity. "
+                        f"Context: If the user replies in another language, IGNORE IT and stay in {st.session_state.user_lang}. "
                         f"\nAudit History: {past_questions}"
                     )
                 }
@@ -114,23 +124,18 @@ def diagnostic_survey():
         # --- UI DISPLAY ---
         with st.container(border=True):
             st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Saisissez votre analyse ici...")
+            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="...")
 
-        if st.button("Valider l'étape ➡️", use_container_width=True):
+        if st.button("Suivant ➡️", use_container_width=True):
             if user_ans:
-                st.session_state.diag_answers.append({
-                    "q": st.session_state[f"q_{st.session_state.diag_step}"], 
-                    "a": user_ans
-                })
-                
+                st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
                 if st.session_state.diag_step < total_questions:
                     st.session_state.diag_step += 1
                     st.rerun()
                 else:
-                    # Logic for generating the 40-day plan goes here
-                    st.success("Mrigl ! Hani ngedlek fil master plan.")
+                    st.success("Diagnostic terminé. Génération du plan...")
             else:
-                st.warning("Veuillez fournir une réponse pour continuer.")
+                st.warning("Veuillez répondre.")
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
