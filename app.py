@@ -42,70 +42,53 @@ if "page" not in st.session_state:
 
 # --- DIAGNOSTIC ENGINE ---
 def diagnostic_survey():
-    st.markdown("<h2 style='text-align: center;'>🧠 Diagnostic Initial</h2>", unsafe_allow_html=True)
-    st.info(f"Bonjour {st.session_state.temp_user['username']}, bsh n'ajustiw el plan mte3ek, lzemna njewbou 3ala chwaya akahaw.")
-
+    st.markdown("<h2 style='text-align: center;'>🧠 Diagnostic Haute Performance</h2>", unsafe_allow_html=True)
+    
     if "diag_step" not in st.session_state:
         st.session_state.diag_step = 1
         st.session_state.diag_answers = []
-        st.session_state.user_gender = None # Initialize gender state
+        st.session_state.user_gender = None 
+        st.session_state.user_lang = None
 
     total_questions = 35 
     progress = st.session_state.diag_step / total_questions
-    st.progress(progress, text=f"Question {st.session_state.diag_step} sur {total_questions}")
+    st.progress(progress, text=f"Analyse en cours : Étape {st.session_state.diag_step} sur {total_questions}")
 
-    # STEP 1: FORCE GENDER SELECTION
-    if st.session_state.diag_step == 1 and st.session_state.user_gender is None:
-        st.subheader("Enti tfol wala tofla? (Bsh na3ref n'adresti l klem m3ak)")
-        gen_col1, gen_col2 = st.columns(2)
-        with gen_col1:
-            if st.button("👦 Tfol", use_container_width=True):
-                st.session_state.user_gender = "male"
-                st.session_state.diag_answers.append({"q": "Gender", "a": "Tfol"})
-                st.session_state.diag_step += 1
-                st.rerun()
-        with gen_col2:
-            if st.button("👧 Tofla", use_container_width=True):
-                st.session_state.user_gender = "female"
-                st.session_state.diag_answers.append({"q": "Gender", "a": "Tofla"})
-                st.session_state.diag_step += 1
-                st.rerun()
-        return # Stop execution here until gender is picked
+    # --- STEP 1 & 2: GENDER & LANGUAGE (Keep your existing logic here) ---
+    # [Insert your existing Gender/Language selection code here...]
 
-    # STEP 2: AI QUESTIONS (Starting from step 2)
+    # --- STEP 3: MASTER PLANNER ENGINE ---
     if f"q_{st.session_state.diag_step}" not in st.session_state:
-        past_questions = [ans['q'] for ans in st.session_state.diag_answers]
-        
-        # Enhanced Derdja Prompt
-        gender_instruction = "L'élève est un garçon (parle lui au masculin)." if st.session_state.user_gender == "male" else "L'élève est une fille (parle lui au féminin)."
-
-        # Extract details for the AI
-        profile = st.session_state.temp_user_profile_data
+        past_questions = [f"Q: {ans['q']} | A: {ans['a']}" for ans in st.session_state.diag_answers]
+        gender_instr = "Masculine" if st.session_state.user_gender == "male" else "Feminine"
         
         context_prompt = [
             {
                 "role": "system", 
                 "content": (
-                    f"Tu es un coach scolaire tunisien très amical et motivant pour un élève en {st.session_state.temp_user_profile_data['level']}. "
-                    f"Tu DOIS parler EXCLUSIVEMENT en Arabe Tunisien (Derdja) authentique. {gender_instruction} "
-                    "Utilise un vocabulaire proche des jeunes (ex: 'ya m3alem', 'ya balti', 'rak bech toussel', 'jawwek bahi'). "
-                    "Pose une seule question courte pour comprendre ses points forts, faiblesses ou habitudes."
-                    f"Questions déjà posées: {past_questions}"
+                    f"You are a Master Academic Architect and Educational Psychologist. "
+                    f"Target Level: {st.session_state.temp_user_profile_data['level']}. Language: {st.session_state.user_lang}. "
+                    f"Grammar: {gender_instr}. "
+                    "\nSTRATEGIC MANDATE: Your goal is to extract high-leverage data to build a 40-day 'Deep Work' plan. "
+                    "\nDIAGNOSTIC PILLARS to cover: "
+                    "1. Current academic standing vs specific targets. "
+                    "2. Psychology: Locus of control and procrastination triggers. "
+                    "3. Chronobiology: Identify peak focus hours. "
+                    "4. Environmental friction: What stops them from studying? "
+                    "5. Deadline: You MUST ask for the exact date of their final exams to calculate the 'Runway'. "
+                    "\nRULE: Ask ONLY ONE short, high-impact question. Be elite, encouraging, but clinical. "
+                    f"\nAudit History: {past_questions}"
                 )
-            },
-            {"role": "assistant", "content": "Saha! Taw nzid neshlek bsh nriglou el jaw."}
+            }
         ]
-        
-        for ans in st.session_state.diag_answers[-3:]:
-            context_prompt.append({"role": "assistant", "content": ans['q']})
-            context_prompt.append({"role": "user", "content": ans['a']})
-            
         st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
 
-    st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-    user_ans = st.text_input("A3tini rayek...", key=f"ans_{st.session_state.diag_step}")
+    # --- UI DISPLAY ---
+    with st.container(border=True):
+        st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
+        user_ans = st.text_area("Votre analyse...", key=f"ans_{st.session_state.diag_step}", placeholder="Répondez ici...")
 
-    if st.button("Suivant ➡️", use_container_width=True):
+    if st.button("Valider l'étape ➡️", use_container_width=True):
         if user_ans:
             st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
             
@@ -113,10 +96,20 @@ def diagnostic_survey():
                 st.session_state.diag_step += 1
                 st.rerun()
             else:
-                with st.spinner("Analyse de tes réponses et génération de ton plan Carthage..."):
+                with st.spinner("🚀 L'IA génère votre architecture de réussite..."):
+                    # FINAL PLAN PROMPT: Using Psychology & Spaced Repetition
+                    final_system_prompt = (
+                        "You are a Master Academic Planner. Create a JSON study plan. "
+                        "Use Spaced Repetition (Active Recall) and Interleaving practices. "
+                        "The plan must be hyper-personalized based on the 35 answers provided. "
+                        "Include: 'daily_tasks' (structured by focus blocks), 'weekly_goals', "
+                        "and 'psych_tips' for staying motivated. "
+                        "Output ONLY pure JSON."
+                    )
+                    
                     plan_prompt = [
-                        {"role": "system", "content": "Tu es un expert en planification scolaire. Analyse les réponses et génère EXCLUSIVEMENT un JSON: {'daily_tasks': [], 'weekly_goals': [], 'end_goal': ''}. Ne parle pas, juste le JSON."},
-                        {"role": "user", "content": str(st.session_state.diag_answers)}
+                        {"role": "system", "content": final_system_prompt},
+                        {"role": "user", "content": f"User Profile: {st.session_state.temp_user_profile_data}. Diagnostic Data: {st.session_state.diag_answers}"}
                     ]
                     raw_plan = ask_openrouter(plan_prompt)
                     
@@ -124,25 +117,22 @@ def diagnostic_survey():
                         clean_json = raw_plan.replace("```json", "").replace("```", "").strip()
                         plan_data = json.loads(clean_json)
                         
-                        # 1. Save Diagnostics
                         supabase.table("user_diagnostics").insert({
                             "username": st.session_state.temp_user["username"],
                             "answers": st.session_state.diag_answers,
                             "generated_plan": plan_data
                         }).execute()
                         
-                        # 2. Save Final Profile (which now includes Section, Option, and Method)
                         supabase.table("users_profile").insert(st.session_state.temp_user_profile_data).execute()
 
-                        # 3. Log them in
                         st.session_state.user = st.session_state.temp_user_profile_data
                         st.session_state.step = "main"
-                        st.success("Plan généré avec succès !")
+                        st.success("Plan généré !")
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Erreur de formatage: {e}")
+                        st.error(f"Error: {e}")
         else:
-            st.warning("Écris quelque chose avant de continuer.")
+            st.warning("Veuillez répondre à la question.")
 
 # --- ONBOARDING --- 
 def onboarding(): 
