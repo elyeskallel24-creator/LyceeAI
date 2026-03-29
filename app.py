@@ -54,86 +54,73 @@ def diagnostic_survey():
     progress = st.session_state.diag_step / total_questions
     st.progress(progress, text=f"Analyse en cours : Étape {st.session_state.diag_step} sur {total_questions}")
 
-    # --- STEP 1 & 2: GENDER & LANGUAGE (Keep your existing logic here) ---
-    # [Insert your existing Gender/Language selection code here...]
-
-    # --- STEP 3: MASTER PLANNER ENGINE ---
-    if f"q_{st.session_state.diag_step}" not in st.session_state:
-        past_questions = [f"Q: {ans['q']} | A: {ans['a']}" for ans in st.session_state.diag_answers]
-        gender_instr = "Masculine" if st.session_state.user_gender == "male" else "Feminine"
-        
-        context_prompt = [
-            {
-                "role": "system", 
-                "content": (
-                    f"You are a Master Academic Architect and Educational Psychologist. "
-                    f"Target Level: {st.session_state.temp_user_profile_data['level']}. Language: {st.session_state.user_lang}. "
-                    f"Grammar: {gender_instr}. "
-                    "\nSTRATEGIC MANDATE: Your goal is to extract high-leverage data to build a 40-day 'Deep Work' plan. "
-                    "\nDIAGNOSTIC PILLARS to cover: "
-                    "1. Current academic standing vs specific targets. "
-                    "2. Psychology: Locus of control and procrastination triggers. "
-                    "3. Chronobiology: Identify peak focus hours. "
-                    "4. Environmental friction: What stops them from studying? "
-                    "5. Deadline: You MUST ask for the exact date of their final exams to calculate the 'Runway'. "
-                    "\nRULE: Ask ONLY ONE short, high-impact question. Be elite, encouraging, but clinical. "
-                    f"\nAudit History: {past_questions}"
-                )
-            }
-        ]
-        st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
-
-    # --- UI DISPLAY ---
-    with st.container(border=True):
-        st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-        user_ans = st.text_area("Votre analyse...", key=f"ans_{st.session_state.diag_step}", placeholder="Répondez ici...")
-
-    if st.button("Valider l'étape ➡️", use_container_width=True):
-        if user_ans:
-            st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
-            
-            if st.session_state.diag_step < total_questions:
+    # --- STEP 1: GENDER SELECTION ---
+    if st.session_state.diag_step == 1:
+        st.subheader("Choisissez votre forme d'adresse")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Masculin", use_container_width=True):
+                st.session_state.user_gender = "male"
                 st.session_state.diag_step += 1
                 st.rerun()
-            else:
-                with st.spinner("🚀 L'IA génère votre architecture de réussite..."):
-                    # FINAL PLAN PROMPT: Using Psychology & Spaced Repetition
-                    final_system_prompt = (
-                        "You are a Master Academic Planner. Create a JSON study plan. "
-                        "Use Spaced Repetition (Active Recall) and Interleaving practices. "
-                        "The plan must be hyper-personalized based on the 35 answers provided. "
-                        "Include: 'daily_tasks' (structured by focus blocks), 'weekly_goals', "
-                        "and 'psych_tips' for staying motivated. "
-                        "Output ONLY pure JSON."
+        with col2:
+            if st.button("Féminin", use_container_width=True):
+                st.session_state.user_gender = "female"
+                st.session_state.diag_step += 1
+                st.rerun()
+
+    # --- STEP 2: LANGUAGE SELECTION ---
+    elif st.session_state.diag_step == 2:
+        st.subheader("Langue de l'audit")
+        lang = st.selectbox("Langue préférée", ["Français", "العربية", "English"])
+        if st.button("Confirmer la langue", use_container_width=True):
+            st.session_state.user_lang = lang
+            st.session_state.diag_step += 1
+            st.rerun()
+
+    # --- STEP 3+: ELITE MASTER PLANNER ENGINE ---
+    else:
+        if f"q_{st.session_state.diag_step}" not in st.session_state:
+            past_questions = [f"Q: {ans['q']} | A: {ans['a']}" for ans in st.session_state.diag_answers]
+            gender_instr = "Masculine" if st.session_state.user_gender == "male" else "Feminine"
+            
+            context_prompt = [
+                {
+                    "role": "system", 
+                    "content": (
+                        f"You are a Master Academic Architect and Educational Psychologist. "
+                        f"Target Level: {st.session_state.temp_user_profile_data['level']}. Language: {st.session_state.user_lang}. "
+                        f"Tone: Extremely formal, sophisticated, and authoritative. Use high-level vocabulary and rhetorical redundancy for impact. "
+                        f"Grammar: {gender_instr}. "
+                        "\nCORE OBJECTIVE: Conduct a clinical psychological and academic audit to build a 'Deep Work' plan. "
+                        "\nSTRATEGIC PILLARS: "
+                        "1. METRICS: You must extract the exact date of final exams to calculate the 'Runway' (Time-to-Impact). "
+                        "2. PSYCHOLOGY: Identify the 'Locus of Control', dopamine triggers, and specific procrastination environmental cues. "
+                        "3. CAPACITY: Determine peak cognitive windows (Chronobiology) and current burnout levels. "
+                        "4. FRICTION: Identify the specific subjects where the student has the highest 'Cognitive Load'. "
+                        "\nINSTRUCTIONS: Ask ONLY ONE high-impact, elite question. Use redundant, formal phrasing (e.g., 'Veuillez décliner avec précision et exhaustivité...'). "
+                        f"\nAudit History: {past_questions}"
                     )
-                    
-                    plan_prompt = [
-                        {"role": "system", "content": final_system_prompt},
-                        {"role": "user", "content": f"User Profile: {st.session_state.temp_user_profile_data}. Diagnostic Data: {st.session_state.diag_answers}"}
-                    ]
-                    raw_plan = ask_openrouter(plan_prompt)
-                    
-                    try:
-                        clean_json = raw_plan.replace("```json", "").replace("```", "").strip()
-                        plan_data = json.loads(clean_json)
-                        
-                        supabase.table("user_diagnostics").insert({
-                            "username": st.session_state.temp_user["username"],
-                            "answers": st.session_state.diag_answers,
-                            "generated_plan": plan_data
-                        }).execute()
-                        
-                        supabase.table("users_profile").insert(st.session_state.temp_user_profile_data).execute()
+                }
+            ]
+            st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
 
-                        st.session_state.user = st.session_state.temp_user_profile_data
-                        st.session_state.step = "main"
-                        st.success("Plan généré !")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error: {e}")
-        else:
-            st.warning("Veuillez répondre à la question.")
+        # --- UI DISPLAY ---
+        with st.container(border=True):
+            st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
+            user_ans = st.text_area("Votre analyse...", key=f"ans_{st.session_state.diag_step}", placeholder="Répondez ici avec précision...")
 
+        if st.button("Valider l'étape ➡️", use_container_width=True):
+            if user_ans:
+                st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
+                
+                if st.session_state.diag_step < total_questions:
+                    st.session_state.diag_step += 1
+                    st.rerun()
+                else:
+                    generate_final_plan() # Call a helper function for the final step
+            else:
+                st.warning("Veuillez fournir une réponse pour continuer.")
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
