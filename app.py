@@ -43,32 +43,56 @@ if "page" not in st.session_state:
 # --- DIAGNOSTIC ENGINE ---
 def diagnostic_survey():
     st.markdown("<h2 style='text-align: center;'>🧠 Diagnostic Initial</h2>", unsafe_allow_html=True)
-    st.info(f"Bonjour {st.session_state.temp_user['username']}, pour créer ton plan personnalisé, j'ai besoin de te poser quelques questions.")
+    st.info(f"Bonjour {st.session_state.temp_user['username']}, bsh n'ajustiw el plan mte3ek, lzemna njewbou 3ala chwaya akahaw.")
 
     if "diag_step" not in st.session_state:
         st.session_state.diag_step = 1
         st.session_state.diag_answers = []
+        st.session_state.user_gender = None # Initialize gender state
 
     total_questions = 35 
     progress = st.session_state.diag_step / total_questions
     st.progress(progress, text=f"Question {st.session_state.diag_step} sur {total_questions}")
 
+    # STEP 1: FORCE GENDER SELECTION
+    if st.session_state.diag_step == 1 and st.session_state.user_gender is None:
+        st.subheader("Enti tfol wala tofla? (Bsh na3ref n'adresti l klem m3ak)")
+        gen_col1, gen_col2 = st.columns(2)
+        with gen_col1:
+            if st.button("👦 Tfol", use_container_width=True):
+                st.session_state.user_gender = "male"
+                st.session_state.diag_answers.append({"q": "Gender", "a": "Tfol"})
+                st.session_state.diag_step += 1
+                st.rerun()
+        with gen_col2:
+            if st.button("👧 Tofla", use_container_width=True):
+                st.session_state.user_gender = "female"
+                st.session_state.diag_answers.append({"q": "Gender", "a": "Tofla"})
+                st.session_state.diag_step += 1
+                st.rerun()
+        return # Stop execution here until gender is picked
+
+    # STEP 2: AI QUESTIONS (Starting from step 2)
     if f"q_{st.session_state.diag_step}" not in st.session_state:
-        # Create a list of questions already asked to prevent redundancy
         past_questions = [ans['q'] for ans in st.session_state.diag_answers]
+        
+        # Enhanced Derdja Prompt
+        gender_instruction = "L'élève est un garçon (parle lui au masculin)." if st.session_state.user_gender == "male" else "L'élève est une fille (parle lui au féminin)."
+        
         context_prompt = [
             {
                 "role": "system", 
                 "content": (
-                    f"Tu es un coach scolaire pour un élève en {st.session_state.temp_user_profile_data['level']}. "
-                    "Pose une question courte et unique en Arabe Tunisien (Derdja). "
-                    "IMPORTANT: Ne répète pas les thèmes déjà abordés. "
+                    f"Tu es un coach scolaire tunisien très amical et motivant pour un élève en {st.session_state.temp_user_profile_data['level']}. "
+                    f"Tu DOIS parler EXCLUSIVEMENT en Arabe Tunisien (Derdja) authentique. {gender_instruction} "
+                    "Utilise un vocabulaire proche des jeunes (ex: 'ya m3alem', 'ya balti', 'rak bech toussel', 'jawwek bahi'). "
+                    "Pose une seule question courte pour comprendre ses points forts, faiblesses ou habitudes."
                     f"Questions déjà posées: {past_questions}"
                 )
             },
-            {"role": "assistant", "content": "Fahimni, taw nishlek bsh na3ref kifesh n3awnek."}
+            {"role": "assistant", "content": "Saha! Taw nzid neshlek bsh nriglou el jaw."}
         ]
-        # Add limited history so the AI knows what it already asked
+        
         for ans in st.session_state.diag_answers[-3:]:
             context_prompt.append({"role": "assistant", "content": ans['q']})
             context_prompt.append({"role": "user", "content": ans['a']})
@@ -76,7 +100,7 @@ def diagnostic_survey():
         st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
 
     st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-    user_ans = st.text_input("Ta réponse...", key=f"ans_{st.session_state.diag_step}")
+    user_ans = st.text_input("A3tini rayek...", key=f"ans_{st.session_state.diag_step}")
 
     if st.button("Suivant ➡️", use_container_width=True):
         if user_ans:
