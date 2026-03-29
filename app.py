@@ -78,6 +78,9 @@ def diagnostic_survey():
         
         # Enhanced Derdja Prompt
         gender_instruction = "L'élève est un garçon (parle lui au masculin)." if st.session_state.user_gender == "male" else "L'élève est une fille (parle lui au féminin)."
+
+        # Extract details for the AI
+        profile = st.session_state.temp_user_profile_data
         
         context_prompt = [
             {
@@ -128,9 +131,10 @@ def diagnostic_survey():
                             "generated_plan": plan_data
                         }).execute()
                         
-                        # 2. Save Final Profile
+                        # 2. Save Final Profile (which now includes Section, Option, and Method)
                         supabase.table("users_profile").insert(st.session_state.temp_user_profile_data).execute()
-                        
+
+                        # 3. Log them in
                         st.session_state.user = st.session_state.temp_user_profile_data
                         st.session_state.step = "main"
                         st.success("Plan généré avec succès !")
@@ -167,18 +171,18 @@ def onboarding():
         char_count = len(method) 
         st.caption(f"Caractères: {char_count}/150") 
 
-        if st.button("Finaliser l'inscription", use_container_width=True): 
-            if 80 <= char_count <= 150: 
-                # Save data temporarily in session instead of DB immediately
-                st.session_state.temp_user_profile_data = { 
-                    "username": st.session_state.temp_user["username"], 
-                    "password": st.session_state.temp_user["password"], 
-                    "level": level, 
-                    "section": section, 
-                    "teaching_method": method 
-                } 
-                st.session_state.step = "diagnostic" # MOVE TO DIAGNOSTIC INSTEAD OF MAIN
-                st.rerun() 
+        if st.button("Finaliser l'inscription", use_container_width=True):
+            if 80 <= char_count <= 150:
+                st.session_state.temp_user_profile_data = {
+                    "username": st.session_state.temp_user["username"],
+                    "password": st.session_state.temp_user["password"],
+                    "level": level,
+                    "section": section,
+                    "optional_subject": optional_subject,
+                    "teaching_method": method
+                }
+                st.session_state.step = "diagnostic"
+                st.rerun()
             else: 
                 st.warning(f"Description trop courte ou trop longue ({char_count}).") 
 
