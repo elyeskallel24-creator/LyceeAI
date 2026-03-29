@@ -54,13 +54,24 @@ def diagnostic_survey():
     st.progress(progress, text=f"Question {st.session_state.diag_step} sur {total_questions}")
 
     if f"q_{st.session_state.diag_step}" not in st.session_state:
+        # Create a list of questions already asked to prevent redundancy
+        past_questions = [ans['q'] for ans in st.session_state.diag_answers]
         context_prompt = [
-            {"role": "system", "content": f"Tu es un coach scolaire. L'élève est en {st.session_state.temp_user_profile_data['level']} ({st.session_state.temp_user_profile_data['section']}). Pose une question courte en Arabe Tunisien (Derdja) pour comprendre ses forces et faiblesses."},
+            {
+                "role": "system", 
+                "content": (
+                    f"Tu es un coach scolaire pour un élève en {st.session_state.temp_user_profile_data['level']}. "
+                    "Pose une question courte et unique en Arabe Tunisien (Derdja). "
+                    "IMPORTANT: Ne répète pas les thèmes déjà abordés. "
+                    f"Questions déjà posées: {past_questions}"
+                )
+            },
             {"role": "assistant", "content": "Fahimni, taw nishlek bsh na3ref kifesh n3awnek."}
         ]
         # Add limited history so the AI knows what it already asked
         for ans in st.session_state.diag_answers[-3:]:
-            context_prompt.append({"role": "user", "content": f"Réponse précédente: {ans['a']}"})
+            context_prompt.append({"role": "assistant", "content": ans['q']})
+            context_prompt.append({"role": "user", "content": ans['a']})
             
         st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
 
