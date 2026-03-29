@@ -38,6 +38,76 @@ if "step" not in st.session_state:
     st.session_state.step = "auth" 
 if "page" not in st.session_state:
     st.session_state.page = "dashboard"
+
+# --- DIAGNOSTIC ENGINE ---
+def diagnostic_survey():
+    st.markdown("<h2 style='text-align: center;'>🧠 Diagnostic Initial</h2>", unsafe_allow_html=True)
+    st.info(f"Bonjour {st.session_state.temp_user['username']}, pour créer ton plan personnalisé, j'ai besoin de te poser quelques questions.")
+
+    # Initialize diagnostic state
+    if "diag_step" not in st.session_state:
+        st.session_state.diag_step = 1
+        st.session_state.diag_answers = []
+
+    total_questions = 35 # You requested 35
+
+    # Progress bar
+    progress = st.session_state.diag_step / total_questions
+    st.progress(progress, text=f"Question {st.session_state.diag_step} sur {total_questions}")
+
+    # The AI generates the question based on context and step
+    if f"q_{st.session_state.diag_step}" not in st.session_state:
+        context_prompt = [
+            {"role": "system", "content": f"Tu es un coach scolaire. L'élève est en {st.session_state.temp_user['level']} ({st.session_state.temp_user['section']}). Pose la question numéro {st.session_state.diag_step} sur 35 pour évaluer ses bases, ses points faibles et son emploi du temps. Pose UNE SEULE question courte en Tunisien (Derja)."},
+            {"role": "assistant", "content": "Fahimni, taw nishlek bsh na3ref kifesh n3awnek."}
+        ]
+        # Add previous answers to context so AI doesn't repeat itself
+        for i, ans in enumerate(st.session_state.diag_answers):
+            context_prompt.append({"role": "user", "content": f"Question {i+1} répondue."})
+            
+        st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
+
+    # Display the AI's question
+    st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
+    
+    user_ans = st.text_input("Ta réponse...", key=f"ans_{st.session_state.diag_step}")
+
+    if st.button("Suivant ➡️", use_container_width=True):
+        if user_ans:
+            st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
+            
+            if st.session_state.diag_step < total_questions:
+                st.session_state.diag_step += 1
+                st.rerun()
+            else:
+                # --- FINISHED QUESTIONS: GENERATE PLAN ---
+                with st.spinner("Analyse de tes réponses et génération de ton plan Carthage..."):
+                    plan_prompt = [
+                        {"role": "system", "content": "Tu es un expert en planification scolaire. Analyse les 35 réponses suivantes et génère un JSON contenant: 'daily_tasks' (liste), 'weekly_goals' (liste), et 'end_goal' (string)."},
+                        {"role": "user", "content": str(st.session_state.diag_answers)}
+                    ]
+                    raw_plan = ask_openrouter(plan_prompt)
+                    
+                    # Save to Database
+                    try:
+                        supabase.table("user_diagnostics").insert({
+                            "username": st.session_state.temp_user["username"],
+                            "answers": st.session_state.diag_answers,
+                            "generated_plan": raw_plan
+                        }).execute()
+                        
+                        # Now complete the actual profile creation (from onboarding)
+                        supabase.table("users_profile").insert(st.session_state.temp_user_profile_data).execute()
+                        
+                        st.session_state.user = st.session_state.temp_user_profile_data
+                        st.session_state.step = "main"
+                        st.success("Plan généré avec succès !")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erreur sauvegarde: {e}")
+        else:
+            st.warning("Écris quelque chose avant de continuer.")
+
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
@@ -67,22 +137,16 @@ def onboarding():
 
         if st.button("Finaliser l'inscription", use_container_width=True): 
             if 80 <= char_count <= 150: 
-                user_data = { 
+                # Save data temporarily in session instead of DB immediately
+                st.session_state.temp_user_profile_data = { 
                     "username": st.session_state.temp_user["username"], 
                     "password": st.session_state.temp_user["password"], 
                     "level": level, 
                     "section": section, 
                     "teaching_method": method 
                 } 
-                try: 
-                    supabase.table("users_profile").insert(user_data).execute() 
-                    st.session_state.user = user_data 
-                    st.session_state.page = "dashboard" # Set landing page
-                    st.session_state.step = "main" # Move to main app logic
-                    st.success("Compte créé !") 
-                    st.rerun() 
-                except Exception as e: 
-                    st.error(f"Erreur: {e}") 
+                st.session_state.step = "diagnostic" # MOVE TO DIAGNOSTIC INSTEAD OF MAIN
+                st.rerun() 
             else: 
                 st.warning(f"Description trop courte ou trop longue ({char_count}).") 
 
@@ -195,6 +259,8 @@ if st.session_state.step == "auth":
     auth_screen() 
 elif st.session_state.step == "onboarding": 
     onboarding() 
+elif st.session_state.step == "diagnostic": # ADD THIS PART
+    diagnostic_survey()
 else:
     # Initialize session tracking
     if "current_session_id" not in st.session_state:
