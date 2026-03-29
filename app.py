@@ -50,21 +50,21 @@ def diagnostic_survey():
         st.session_state.user_gender = None 
         st.session_state.user_lang = None
 
-    total_questions = 35 
+    total_questions = 15 # Reduced from 35 to keep it "high-impact" and less repetitive
     progress = st.session_state.diag_step / total_questions
     st.progress(progress, text=f"Analyse en cours : Étape {st.session_state.diag_step} sur {total_questions}")
 
     # --- STEP 1: GENDER SELECTION ---
     if st.session_state.diag_step == 1:
-        st.subheader("Choisissez votre forme d'adresse")
+        st.subheader("Choisissez votre forme d'adresse / اختر صيغة الخطاب")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Masculin", use_container_width=True):
+            if st.button("Masculin / ذكر", use_container_width=True):
                 st.session_state.user_gender = "male"
                 st.session_state.diag_step += 1
                 st.rerun()
         with col2:
-            if st.button("Féminin", use_container_width=True):
+            if st.button("Féminin / أنثى", use_container_width=True):
                 st.session_state.user_gender = "female"
                 st.session_state.diag_step += 1
                 st.rerun()
@@ -78,64 +78,68 @@ def diagnostic_survey():
             st.session_state.diag_step += 1
             st.rerun()
 
-    # --- STEP 3: DEADLINE / END GOAL (MANDATORY) ---
+    # --- STEP 3: DEADLINE (MANDATORY METRIC) ---
     elif st.session_state.diag_step == 3:
         labels = {
-            "Français": "Quelle est la date précise de votre objectif final (examen) ?",
-            "العربية": "ما هو التاريخ المحدد لهدفك النهائي (الامتحان)؟",
-            "English": "What is the exact date of your final goal (exam)?"
+            "Français": "Quelle est la date précise de ton examen final ?",
+            "العربية": "ما هو التاريخ الدقيق لامتحانك النهائي؟",
+            "English": "What is the exact date of your final exam?"
         }
         st.subheader(labels.get(st.session_state.user_lang, labels["English"]))
         deadline = st.date_input("Date")
-        if st.button("Valider la date", use_container_width=True):
+        if st.button("Valider / تأكيد", use_container_width=True):
             st.session_state.diag_answers.append({"q": "Deadline", "a": str(deadline)})
             st.session_state.diag_step += 1
             st.rerun()
 
-    # --- STEP 4+: DYNAMIC AI QUESTIONS ---
+    # --- STEP 4+: DYNAMIC AI PSYCHOLOGY & METRICS ---
     else:
-        if f"q_{st.session_state.diag_step}" not in st.session_state:
-            past_questions = [f"Q: {ans['q']} | A: {ans['a']}" for ans in st.session_state.diag_answers]
+        # Generate the question only once per step
+        q_key = f"q_{st.session_state.diag_step}"
+        if q_key not in st.session_state:
+            # 1. Prepare history to prevent repetition
+            past_q_summary = ", ".join([ans['q'] for ans in st.session_state.diag_answers])
             
-            # Strict Language Handling
-            lang_instruction = {
-                "Français": "Talk ONLY in very simple, clear French. No complex words.",
-                "العربية": "Talk ONLY in very simple, clear Arabic (Fusha or simple Tunisian). No complex words.",
-                "English": "Talk ONLY in very simple, clear English. No complex words."
+            # 2. Strict Instructions for Tone and Target
+            instructions = {
+                "Français": "Parle en français TRÈS simple. Adresse-toi DIRECTEMENT à l'utilisateur (Tu). Pas de 'l'élève'. Pas d'introduction.",
+                "العربية": "تحدث بلغة عربية بسيطة جداً. وجه الخطاب للمستخدم مباشرة (أنت). لا تتحدث بأسلوب الغائب. لا مقدمات.",
+                "English": "Speak in VERY simple English. Address the user DIRECTLY (You). No 'the student'. No introductions."
             }
-            
+
             context_prompt = [
                 {
                     "role": "system", 
                     "content": (
-                        f"You are an Elite Academic Planner. Your mission is to extract data to build a top-notch plan. "
+                        f"You are a Master Academic Planner. Your goal: extract psychological and metric data to build a plan. "
                         f"Target Level: {st.session_state.temp_user_profile_data['level']}. "
-                        f"Target Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
-                        f"Constraint: DO NOT introduce yourself. DO NOT say 'I am a psychologist'. "
-                        f"Constraint: Ask ONLY one direct, short, and concise question. "
-                        f"Focus: Metrics, Psychology, Friction, and Capacity. "
-                        f"Context: If the user replies in another language, IGNORE IT and stay in {st.session_state.user_lang}. "
-                        f"\nAudit History: {past_questions}"
+                        f"Target Language: {st.session_state.user_lang}. {instructions.get(st.session_state.user_lang)} "
+                        "\nSTRICT PROTOCOL: "
+                        "1. NO REPETITION. Do NOT ask about topics already covered in this list: " + past_q_summary +
+                        "\n2. BREVITY: Max 15 words. Direct question only. "
+                        "\n3. TOPICS TO EXPLORE: [Daily energy peaks, environment friction, dopamine/phone habits, deepest subject fear, active recall vs passive reading, sleep consistency, reward systems]."
+                        "\n4. NO FLUFF: Do not say 'I am a planner' or 'Good answer'. Just ask the next metric/psychology question."
                     )
                 }
             ]
-            st.session_state[f"q_{st.session_state.diag_step}"] = ask_openrouter(context_prompt)
+            st.session_state[q_key] = ask_openrouter(context_prompt)
 
         # --- UI DISPLAY ---
         with st.container(border=True):
-            st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="...")
+            st.subheader(st.session_state[q_key])
+            user_ans = st.text_area("Ta réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Sois direct...")
 
         if st.button("Suivant ➡️", use_container_width=True):
             if user_ans:
-                st.session_state.diag_answers.append({"q": st.session_state[f"q_{st.session_state.diag_step}"], "a": user_ans})
+                st.session_state.diag_answers.append({"q": st.session_state[q_key], "a": user_ans})
                 if st.session_state.diag_step < total_questions:
                     st.session_state.diag_step += 1
                     st.rerun()
                 else:
-                    st.success("Diagnostic terminé. Génération du plan...")
+                    st.success("Diagnostic terminé. Analyse des données...")
+                    # Logic to proceed to generating the actual plan goes here
             else:
-                st.warning("Veuillez répondre.")
+                st.warning("Réponds à la question pour avancer.")
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
