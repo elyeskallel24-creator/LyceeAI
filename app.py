@@ -95,13 +95,14 @@ def diagnostic_survey():
     # --- STEP 4+: DYNAMIC AI QUESTIONS ---
     else:
         if f"q_{st.session_state.diag_step}" not in st.session_state:
+            audit_log = ""
+            for i, ans in enumerate(st.session_state.diag_answers):
+                audit_log += f"Step {i+1} | Question: {ans['q']} | Answer: {ans['a']}\n"
             lang_instruction = {
                 "Françcais": "Répondez uniquement en Français. Soyez direct et professionnel.",
                 "العربية": "أجب باللغة العربية فقط. كن مباشراً ومهنياً.",
                 "English": "Respond only in English. Be direct and professional."
             }
-            # 1. Prepare structured history for the AI
-            audit_log = "\n".join([f"Question {i+1}: {ans['q']} | Answer: {ans['a']}" for i, ans in enumerate(st.session_state.diag_answers)])
 
             # 2. Define the "Master Plan" categories for the AI to fulfill
             # This ensures the answers are coordinated for the future planning algorithm
@@ -141,16 +142,28 @@ def diagnostic_survey():
                 }
             ]
             
-            # Generate question
-            raw_q = ask_openrouter(context_prompt)
-            clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
-            st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
+            with st.spinner("L'IA réfléchit..."):
+                raw_q = ask_openrouter(context_prompt)
+                clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
+                st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
 
         # --- UI DISPLAY (Remains mostly the same) ---
         with st.container(border=True):
             st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
             user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Tapez votre réponse ici...")
 
+            col_nav = st.columns([1, 1])
+            with col_nav[1]:
+                if st.button("Suivant ➡️", use_container_width=True):
+                    if user_ans.strip():
+                        st.session_state.diag_answers.append({
+                            "q": st.session_state[f"q_{st.session_state.diag_step}"],
+                            "a": user_ans
+                        })
+                        st.session_state.diag_step += 1
+                        st.rerun()
+                    else:
+                        st.warning("Lezmek tjeweb bch tet3ada liba3dou")
         if st.button("Suivant ➡️", use_container_width=True):
             if user_ans:
                 st.session_state.diag_answers.append({
