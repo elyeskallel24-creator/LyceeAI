@@ -150,7 +150,7 @@ def diagnostic_survey():
                 }
             ]
             
-            with st.spinner("L'IA réfléchit..."):
+            with st.spinner("lahdha bark ay, L'AI yohrek..."):
                 raw_q = ask_openrouter(context_prompt)
                 if raw_q:
                     # Success: Clean the question and save it
