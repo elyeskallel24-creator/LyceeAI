@@ -166,7 +166,7 @@ def diagnostic_survey():
         # --- UI DISPLAY (Remains mostly the same) ---
         with st.container(border=True):
             st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Tapez votre réponse ici...")
+            user_ans = st.text_area("Skipi 3abd el sami3, jeweb...", key=f"ans_{st.session_state.diag_step}", placeholder="Tapez votre réponse ici...")
 
             if st.button("Suivant ➡️", use_container_width=True):
                 if user_ans.strip():
