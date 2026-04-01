@@ -29,8 +29,9 @@ def ask_openrouter(messages):
     try: 
         res = requests.post(endpoint, headers=headers, data=json.dumps(data), timeout=30) 
         return res.json()['choices'][0]['message']['content'] 
-    except: 
-        return "System is busy. Please try again." 
+    except Exception as e: 
+        # Instead of returning a string, we return None so we can handle it in the UI
+        return None 
 
 # --- AUTH STATE --- 
 if "user" not in st.session_state: 
@@ -122,17 +123,24 @@ def diagnostic_survey():
                         f"User Level: {st.session_state.temp_user_profile_data['level']} | Section: {st.session_state.temp_user_profile_data['section']}. "
                         f"Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
                         "\n--- MISSION ---"
-                        "Interrogates the student directly to build their 40-day revision plan. "
-                        "You are talking TO the student, not ABOUT the student. Use 'Tu' (French), 'You' (English), or direct address (Arabic)."
+                        "Interrogate the student to build a personalized revision plan based on their specific deadline. "
+                        "You are talking TO the user (student), not ABOUT the student. Use 'Tu' (French), 'You' (English), or direct address (Arabic)."
                         "\n--- STRATEGIC DOMAINS ---"
                         f"{strategic_goals}"
                         "\n--- AUDIT RULES ---"
-                        "1. DIRECT ADDRESS: Always use second-person phrasing (e.g., 'How many hours can YOU study?' NOT 'How many hours can the student study?'). "
-                        "2. ANTI-HYPERFIXATION: If the last 2 questions were about the same subject (e.g., Math), you MUST pivot to a different Domain (e.g., Environment, Chronotype, Psychology, or anything that helps you build a superb plan). "
-                        "3. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
-                        "4. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
-                        "5. NO FLUFF: No greetings. Just the question. "
-                        "6. FORMAT: Short, sharp, and high-impact. "
+                        "1. NO REASONING: Do not explain why you are asking the question. Do not say 'The next most critical data is...'. "
+                        "2. ONLY THE QUESTION: Your entire response must be ONLY the question text. "
+                        "3. NO 40-DAYS: Do not mention '40 days'. The plan length depends on the user's deadline. "
+                        "4. PIVOT: If the user says 'I don't know' or gets frustrated with a topic (like Math), you MUST stop asking about it and move to a different Domain (Environment, Chronotype, or Motivation). "
+                        "5. DIRECT ADDRESS: Never say 'The student'. Say 'You'. "
+                        "6. DIRECT ADDRESS: Always use second-person phrasing (e.g., 'How many hours can YOU study?' NOT 'How many hours can the student study?'). "
+                        "7. ANTI-HYPERFIXATION: If the last 2 questions were about the same subject (e.g., Math), you MUST pivot to a different Domain (e.g., Environment, Chronotype, Psychology, or anything that helps you build a superb plan). "
+                        "8. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
+                        "9. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
+                        "10. NO FLUFF: No greetings. Just the question. "
+                        "11. FORMAT: Short, sharp, and high-impact. "
+                        f"\n--- STRATEGIC DOMAINS ---"
+                        f"{strategic_goals}"
                         f"\n--- AUDIT LOG (PAST DATA) ---\n{audit_log}"
                     )
                 },
@@ -144,8 +152,16 @@ def diagnostic_survey():
             
             with st.spinner("L'IA réfléchit..."):
                 raw_q = ask_openrouter(context_prompt)
-                clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
-                st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
+                if raw_q:
+                    # Success: Clean the question and save it
+                    clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
+                    st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
+                else:
+                    # Failure: Show a nice error and a retry button
+                    st.error("Désolé, barcha yesta3mlou fil free plan!. Ichri forfait LyceeAI bch ykounlk asra3 ou matestha9ech testana lin el serveur yafragh")
+                    if st.button("🔄 3awed lanci"):
+                        st.rerun()
+                    st.stop() # This stops the code here so it doesn't crash below
 
         # --- UI DISPLAY (Remains mostly the same) ---
         with st.container(border=True):
