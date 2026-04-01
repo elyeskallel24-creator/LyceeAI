@@ -101,9 +101,7 @@ def diagnostic_survey():
                 "English": "Respond only in English. Be direct and professional."
             }
             # 1. Prepare structured history for the AI
-            audit_log = ""
-            for i, ans in enumerate(st.session_state.diag_answers):
-                audit_log += f"[{i+1}] Q: {ans['q']} | A: {ans['a']}\n"
+            audit_log = "\n".join([f"Question {i+1}: {ans['q']} | Answer: {ans['a']}" for i, ans in enumerate(st.session_state.diag_answers)])
 
             # 2. Define the "Master Plan" categories for the AI to fulfill
             # This ensures the answers are coordinated for the future planning algorithm
