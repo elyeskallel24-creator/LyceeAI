@@ -95,44 +95,55 @@ def diagnostic_survey():
     # --- STEP 4+: DYNAMIC AI QUESTIONS ---
     else:
         if f"q_{st.session_state.diag_step}" not in st.session_state:
-            # Format the history so the AI knows what NOT to repeat
-            past_questions = [f"Q: {ans['q']}" for ans in st.session_state.diag_answers]
-            
-            # Strict Language and Tone Handling
-            lang_instruction = {
-                "Français": "Parle UNIQUEMENT en Français très simple. Utilise le 'Tu' ou le 'Vous' pour t'adresser directement à l'utilisateur. Ne dis jamais 'l'élève'.",
-                "العربية": "تحدث فقط باللغة العربية البسيطة جداً. وجه كلامك مباشرة للمستخدم (أنت). لا تتحدث بصيغة الغائب ولا تقل 'الطالب'.",
-                "English": "Talk ONLY in very simple English. Address the user directly as 'You'. Never refer to them in the third person like 'the student'."
-            }
-            
+            # 1. Prepare structured history for the AI
+            audit_log = ""
+            for i, ans in enumerate(st.session_state.diag_answers):
+                audit_log += f"[{i+1}] Q: {ans['q']} | A: {ans['a']}\n"
+
+            # 2. Define the "Master Plan" categories for the AI to fulfill
+            # This ensures the answers are coordinated for the future planning algorithm
+            strategic_goals = """
+            - DOMAIN 1: Cognitive Load (How much can they study before burnout?)
+            - DOMAIN 2: Environment & Friction (Phone distractions, noise, tools)
+            - DOMAIN 3: Subject Hierarchy (Specific weak points in their section)
+            - DOMAIN 4: Chronotype (When is their brain most 'lethal' for math vs. memorization?)
+            - DOMAIN 5: Motivation/Psychology (Why do they want this? Fear or Ambition?)
+            """
+
             context_prompt = [
                 {
                     "role": "system", 
                     "content": (
-                        f"You are an Elite Academic Architect. Your goal is to extract psychological and technical data to build a top-notch study plan. "
-                        f"Target Level: {st.session_state.temp_user_profile_data['level']}. "
-                        f"Target Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
-                        "\nSTRICT PROTOCOL: "
-                        "1. NO INTRODUCTIONS: Do not say 'I am a planner' or 'As a professional'. Ask the question immediately. "
-                        "2. NO REPETITION: Check the Audit History. If a topic (concentration, environment, specific subjects) was already touched, ask something DIFFERENT. "
-                        "3. DIRECT ADDRESS: Speak TO the user. "
-                        "4. TOPICS TO EXTRACT: Psychological friction, dopamine levels, study environment, hardest subjects, energy peaks, and resource availability. "
-                        "5. BE CONCISE: Use minimal words. "
-                        f"\nAudit History (DO NOT REPEAT TOPICS FROM HERE): {past_questions}"
+                        f"You are the Elite Academic Architect for LyceeAI. "
+                        f"User Level: {st.session_state.temp_user_profile_data['level']} | Section: {st.session_state.temp_user_profile_data['section']}. "
+                        f"Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
+                        "\n--- MISSION ---"
+                        "Extract precise data to populate a 40-day hyper-personalized revision plan. "
+                        "\n--- STRATEGIC DOMAINS ---"
+                        f"{strategic_goals}"
+                        "\n--- AUDIT RULES ---"
+                        "1. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
+                        "2. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
+                        "3. NO FLUFF: No greetings. Just the question. "
+                        "4. FORMAT: Short, sharp, and high-impact. "
+                        f"\n--- AUDIT LOG (PAST DATA) ---\n{audit_log}"
                     )
+                },
+                {
+                    "role": "user",
+                    "content": "Based on the log, what is the next most critical piece of data needed to build their 40-day plan?"
                 }
             ]
             
             # Generate question
             raw_q = ask_openrouter(context_prompt)
-            # Clean up potential AI prefixes
             clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
             st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
 
-        # --- UI DISPLAY ---
+        # --- UI DISPLAY (Remains mostly the same) ---
         with st.container(border=True):
             st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
-            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Écrivez ici...")
+            user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Tapez votre réponse ici...")
 
         if st.button("Suivant ➡️", use_container_width=True):
             if user_ans:
@@ -140,14 +151,10 @@ def diagnostic_survey():
                     "q": st.session_state[f"q_{st.session_state.diag_step}"], 
                     "a": user_ans
                 })
-                if st.session_state.diag_step < total_questions:
-                    st.session_state.diag_step += 1
-                    st.rerun()
-                else:
-                    st.success("Diagnostic terminé. Génération du plan...")
-                    # Logic to save to DB and move to dashboard would go here
+                st.session_state.diag_step += 1
+                st.rerun()
             else:
-                st.warning("Veuillez répondre pour continuer l'audit.")
+                st.warning("Une réponse est nécessaire pour calibrer votre IA.")
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
