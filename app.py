@@ -95,6 +95,11 @@ def diagnostic_survey():
     # --- STEP 4+: DYNAMIC AI QUESTIONS ---
     else:
         if f"q_{st.session_state.diag_step}" not in st.session_state:
+            lang_instruction = {
+                "Françcais": "Répondez uniquement en Français. Soyez direct et professionnel.",
+                "العربية": "أجب باللغة العربية فقط. كن مباشراً ومهنياً.",
+                "English": "Respond only in English. Be direct and professional."
+            }
             # 1. Prepare structured history for the AI
             audit_log = ""
             for i, ans in enumerate(st.session_state.diag_answers):
