@@ -129,10 +129,11 @@ def diagnostic_survey():
                         f"{strategic_goals}"
                         "\n--- AUDIT RULES ---"
                         "1. DIRECT ADDRESS: Always use second-person phrasing (e.g., 'How many hours can YOU study?' NOT 'How many hours can the student study?'). "
-                        "2. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
-                        "3. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
-                        "4. NO FLUFF: No greetings. Just the question. "
-                        "5. FORMAT: Short, sharp, and high-impact. "
+                        "2. ANTI-HYPERFIXATION: If the last 2 questions were about the same subject (e.g., Math), you MUST pivot to a different Domain (e.g., Environment, Chronotype, Psychology, or anything that helps you build a superb plan). "
+                        "3. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
+                        "4. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
+                        "5. NO FLUFF: No greetings. Just the question. "
+                        "6. FORMAT: Short, sharp, and high-impact. "
                         f"\n--- AUDIT LOG (PAST DATA) ---\n{audit_log}"
                     )
                 },
