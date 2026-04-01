@@ -42,7 +42,7 @@ if "page" not in st.session_state:
 
 # --- DIAGNOSTIC ENGINE ---
 def diagnostic_survey():
-    st.markdown("<h2 style='text-align: center;'>🧠 Diagnostic Haute Performance</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>🔎 35 sou2el bch na3mloulk plan mezyen kima enti thebou</h2>", unsafe_allow_html=True)
     
     if "diag_step" not in st.session_state:
         st.session_state.diag_step = 1
@@ -56,24 +56,24 @@ def diagnostic_survey():
 
     # --- STEP 1: GENDER SELECTION ---
     if st.session_state.diag_step == 1:
-        st.subheader("Choisissez votre forme d'adresse")
+        st.subheader("Mildekhel mildekhel, enti chnowa ? (just bch na3ref kifeh nadressik, lyceeAI is a safe space)")
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Masculin", use_container_width=True):
+            if st.button("Tfol", use_container_width=True):
                 st.session_state.user_gender = "male"
                 st.session_state.diag_step += 1
                 st.rerun()
         with col2:
-            if st.button("Féminin", use_container_width=True):
+            if st.button("Tofla", use_container_width=True):
                 st.session_state.user_gender = "female"
                 st.session_state.diag_step += 1
                 st.rerun()
 
     # --- STEP 2: LANGUAGE SELECTION ---
     elif st.session_state.diag_step == 2:
-        st.subheader("Langue de l'audit / لغة التدقيق")
-        lang = st.selectbox("Langue préférée", ["Français", "العربية", "English"])
-        if st.button("Confirmer / تأكيد", use_container_width=True):
+        st.subheader("l'AI bch yasna3lk plan, i5tar el lougha 2ali thebou yahki beha m3ak.")
+        lang = st.selectbox("i5tar", ["Français", "العربية", "English"])
+        if st.button("Confirmi", use_container_width=True):
             st.session_state.user_lang = lang
             st.session_state.diag_step += 1
             st.rerun()
@@ -152,28 +152,16 @@ def diagnostic_survey():
             st.subheader(st.session_state[f"q_{st.session_state.diag_step}"])
             user_ans = st.text_area("Réponse...", key=f"ans_{st.session_state.diag_step}", placeholder="Tapez votre réponse ici...")
 
-            col_nav = st.columns([1, 1])
-            with col_nav[1]:
-                if st.button("Suivant ➡️", use_container_width=True):
-                    if user_ans.strip():
-                        st.session_state.diag_answers.append({
-                            "q": st.session_state[f"q_{st.session_state.diag_step}"],
-                            "a": user_ans
-                        })
-                        st.session_state.diag_step += 1
-                        st.rerun()
-                    else:
-                        st.warning("Lezmek tjeweb bch tet3ada liba3dou")
-        if st.button("Suivant ➡️", use_container_width=True):
-            if user_ans:
-                st.session_state.diag_answers.append({
-                    "q": st.session_state[f"q_{st.session_state.diag_step}"], 
-                    "a": user_ans
-                })
-                st.session_state.diag_step += 1
-                st.rerun()
-            else:
-                st.warning("Une réponse est nécessaire pour calibrer votre IA.")
+            if st.button("Suivant ➡️", use_container_width=True):
+                if user_ans.strip():
+                    st.session_state.diag_answers.append({
+                        "q": st.session_state[f"q_{st.session_state.diag_step}"],
+                        "a": user_ans
+                    })
+                    st.session_state.diag_step += 1
+                    st.rerun()
+                else:
+                    st.warning("Lezmek tjeweb bch tet3ada liba3dou")
 # --- ONBOARDING --- 
 def onboarding(): 
     st.markdown("<h2 style='text-align: center;'>🎯 Personnalisez votre expérience</h2>", unsafe_allow_html=True) 
