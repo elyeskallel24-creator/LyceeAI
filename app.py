@@ -139,9 +139,7 @@ def diagnostic_survey():
                         "9. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
                         "10. NO FLUFF: No greetings. Just the question. "
                         "11. FORMAT: Short, sharp, and high-impact. "
-                        f"\n--- STRATEGIC DOMAINS ---"
-                        f"{strategic_goals}"
-                        f"\n--- AUDIT LOG (PAST DATA) ---\n{audit_log}"
+                        f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
                 {
@@ -150,11 +148,15 @@ def diagnostic_survey():
                 }
             ]
             
-            with st.spinner("lahdha bark ay, L'AI yohrek..."):
+            with st.spinner("lahdha bark AI is cooking..."):
                 raw_q = ask_openrouter(context_prompt)
-                if raw_q:
-                    # Success: Clean the question and save it
+                # Check if the question is valid (at least 15 characters to avoid "What")
+                if raw_q and len(raw_q.strip()) > 15:
                     clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
+                    # Double-check for word-for-word repetition in past questions
+                    past_questions = [ans['q'] for ans in st.session_state.diag_answers]
+                    if clean_q in past_questions:
+                        st.rerun() # Force the AI to try again if it repeated a question exactly
                     st.session_state[f"q_{st.session_state.diag_step}"] = clean_q
                 else:
                     # Failure: Show a nice error and a retry button
