@@ -177,13 +177,16 @@ def diagnostic_survey():
                         "25. MISSION: You are an architect, not a reporter. Do not report which domain you are using. Just ask the user the question."
                         "26. TIME AWARENESS: You know exactly how many days are left until the exam. Use this to create urgency. If they have very little time, ask harder questions about their priorities."
                         "27. PLAN LENGTH: The total length of the revision plan is the number of days between TODAY and their DEADLINE. Never suggest a plan longer than the time available."
+                        "28. ONE QUESTION PER TOPIC: If the student mentions a subject (e.g., Math, Physics), you are FORBIDDEN from asking a second question about that same subject. Move immediately to a different Domain."
+                        "29. PIVOT IMMEDIATELY: Once you identify a weak point, do not 'drill down'. Move to Environment, Chronotype, or Motivation."
+                        "30. NO REPETITION: Look at the Audit Log. If you see a subject name there, do not type that subject name in your next question."
+                        "31. ONLY the question text. No 'Understood' or 'Next'."
+                        "32. NO internal labels like '(Domain 3)' or '(Subject Hierarchy)'."
+                        "33. NO parentheses or brackets of any kind."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
-                {
-                    "role": "user",
-                    "content": "Based on the log, what is the next most critical piece of data needed to build their plan?"
-                }
+                {"role": "user", "content": "Based on the log, pivot to a completely different domain and ask the next question."}
             ]
             
             with st.spinner("lahdha bark AI is cooking..."):
