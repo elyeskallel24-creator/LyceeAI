@@ -25,14 +25,6 @@ supabase = create_client(url, key)
 def load_embed(): 
     return SentenceTransformer('all-MiniLM-L6-v2') 
 
-def diagnostic_survey():
-    # --- GET LIVE TIME ---
-    now = datetime.now(pytz.timezone('Africa/Tunis'))
-    today_str = now.strftime("%d %B %Y")
-    current_time_str = now.strftime("%H:%M")
-
-    st.markdown("<h2 style='text-align: center;'>🔎 35 sou2el bch na3mloulk plan mezyen kima enti thebou</h2>", unsafe_allow_html=True)
-
 def ask_openrouter(messages): 
     endpoint = "https://openrouter.ai/api/v1/chat/completions" 
     headers = {"Authorization": f"Bearer {openrouter_key}", "Content-Type": "application/json"} 
@@ -54,6 +46,10 @@ if "page" not in st.session_state:
 
 # --- DIAGNOSTIC ENGINE ---
 def diagnostic_survey():
+    # --- GET LIVE TIME ---
+    now = datetime.now(pytz.timezone('Africa/Tunis'))
+    today_str = now.strftime("%d %B %Y")
+    current_time_str = now.strftime("%H:%M")
     st.markdown("<h2 style='text-align: center;'>🔎 35 sou2el bch na3mloulk plan mezyen kima enti thebou</h2>", unsafe_allow_html=True)
     
     if "diag_step" not in st.session_state:
