@@ -136,18 +136,25 @@ def diagnostic_survey():
                         "6. DIRECT ADDRESS: Always use second-person phrasing (e.g., 'How many hours can YOU study?' NOT 'How many hours can the student study?'). "
                         "7. ANTI-HYPERFIXATION: If the last 2 questions were about the same subject (e.g., Math), you MUST pivot to a different Domain (e.g., Environment, Chronotype, Psychology, or anything that helps you build a superb plan). "
                         "8. NO REPETITION: Check the Audit Log. If you already know about their environment, move to Chronotype. "
-                        "9. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
+                        "9. TERMINOLOGY: Avoid academic jargon like 'pedagogical methods'. Ask 'How do you usually study?'"
                         "10. NO FLUFF: No greetings. Just the question. "
                         "11. FORMAT: Short, sharp, and high-impact. "
                         "12. SUBJECT FOCUS: Instead of 'What subjects for this exam?', ask 'Which subjects do you want us to focus on the most in your plan?'"
                         "13. ANTI-HYPERFIXATION: Do not ask more than 1-2 questions about specific subjects. Once you know their weak points, IMMEDIATELY pivot to Environment, Chronotype, or Motivation."
                         "14. NO REPETITION: If the Audit Log shows you asked about a goal or a subject, you are FORBIDDEN from asking it again in a different way."
+                        "15. ANTI-REPETITION: Do not ask the same thing twice. If the user said they don't use techniques, DO NOT ask about techniques for a specific subject."
+                        "16. NO SECTION LABELS: Do not say 'In your Générale section'. Just ask about the subjects or challenges directly."
+                        "17. NO REASONING: Your response must be ONLY the question. No 'Understood', no 'Next question'."
+                        "18. ANTI-REPETITION: Do not ask the same thing twice. If the user said they don't use techniques, DO NOT ask about techniques for a specific subject."
+                        "19. If you asked about something, dont ask about anything else around that thing you asked about."
+                        "16. DISRESPECT: If the user was rude, insulting, or disrespectful, DO NOT move to a new question. Your response must be: 'Ihtarem rouhek chwaya fil hdith besh najem n3wnik.' followed by the EXACT same question again."
+                        "17. GIBBERISH: If the user typed random characters (e.g., 'sdfgh', 'jfnzen'), DO NOT move to a new question. Your response must be: 'Koun jiddi fi klemek besh el plan mte’ek yji mrigel.' followed by the EXACT same question again."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
                 {
                     "role": "user",
-                    "content": "Based on the log, what is the next most critical piece of data needed to build their 40-day plan?"
+                    "content": "Based on the log, what is the next most critical piece of data needed to build their plan?"
                 }
             ]
             
