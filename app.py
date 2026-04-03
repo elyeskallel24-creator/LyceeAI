@@ -183,6 +183,7 @@ def diagnostic_survey():
                         "31. ONLY the question text. No 'Understood' or 'Next'."
                         "32. NO internal labels like '(Domain 3)' or '(Subject Hierarchy)'."
                         "33. NO parentheses or brackets of any kind."
+                        "34. If the user answers to a question you asked with things like 'your question is not clear' you must re-ask that same exact question but in a different clearer simpler way."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
