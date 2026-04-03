@@ -184,6 +184,10 @@ def diagnostic_survey():
                         "32. NO internal labels like '(Domain 3)' or '(Subject Hierarchy)'."
                         "33. NO parentheses or brackets of any kind."
                         "34. If the user answers to a question you asked with things like 'your question is not clear' you must re-ask that same exact question but in a different clearer simpler way."
+                        "35. SINGLE QUESTION ONLY: You are FORBIDDEN from asking multiple questions in one turn. Pick the most important one and stop."
+                        "36. NO EXAMPLES: Do not provide lists of examples like 'Do you like X or Y?'. Let the user answer naturally."
+                        "37. NO INTROS: Do not say 'Based on your answers...' or 'I'd like to understand...'. Start the response immediately with the question."
+                        "38. MAX LENGTH: Your entire response must be under 20 words."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
