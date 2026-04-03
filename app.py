@@ -131,7 +131,7 @@ def diagnostic_survey():
                         "1. NO REASONING: Do not explain why you are asking the question. Do not say 'The next most critical data is...'. "
                         "2. ONLY THE QUESTION: Your entire response must be ONLY the question text. "
                         "3. NO 40-DAYS: Do not mention '40 days'. The plan length depends on the user's deadline. "
-                        "4. PIVOT: If the user says 'I don't know' or gets frustrated with a topic (like Math), you MUST stop asking about it and move to a different Domain (Environment, Chronotype, or Motivation). "
+                        "4. HARD PIVOT: If the user says 'I don't know', 'skip', or seems stuck, move to a completely different Domain."
                         "5. DIRECT ADDRESS: Never say 'The student'. Say 'You'. "
                         "6. DIRECT ADDRESS: Always use second-person phrasing (e.g., 'How many hours can YOU study?' NOT 'How many hours can the student study?'). "
                         "7. ANTI-HYPERFIXATION: If the last 2 questions were about the same subject (e.g., Math), you MUST pivot to a different Domain (e.g., Environment, Chronotype, Psychology, or anything that helps you build a superb plan). "
@@ -139,6 +139,9 @@ def diagnostic_survey():
                         "9. DRILL DOWN: If the last answer was vague, ask a follow-up to get COORDINATED data. "
                         "10. NO FLUFF: No greetings. Just the question. "
                         "11. FORMAT: Short, sharp, and high-impact. "
+                        "12. SUBJECT FOCUS: Instead of 'What subjects for this exam?', ask 'Which subjects do you want us to focus on the most in your plan?'"
+                        "13. ANTI-HYPERFIXATION: Do not ask more than 1-2 questions about specific subjects. Once you know their weak points, IMMEDIATELY pivot to Environment, Chronotype, or Motivation."
+                        "14. NO REPETITION: If the Audit Log shows you asked about a goal or a subject, you are FORBIDDEN from asking it again in a different way."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
