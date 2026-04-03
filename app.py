@@ -149,6 +149,10 @@ def diagnostic_survey():
                         "19. If you asked about something, dont ask about anything else around that thing you asked about."
                         "16. DISRESPECT: If the user was rude, insulting, or disrespectful, DO NOT move to a new question. Your response must be: 'Ihtarem rouhek chwaya fil hdith besh najem n3wnik.' followed by the EXACT same question again."
                         "17. GIBBERISH: If the user typed random characters (e.g., 'sdfgh', 'jfnzen'), DO NOT move to a new question. Your response must be: 'Koun jiddi fi klemek besh el plan mte’ek yji mrigel.' followed by the EXACT same question again."
+                        "18. ONLY THE QUESTION: Your entire response must be ONLY the text of the question. "
+                        "19. NO INTERNAL LABELS: You are STRICTLY FORBIDDEN from mentioning Domain names, Domain numbers, or category titles (e.g., No '(Domain 3)', No 'Subject Hierarchy')."
+                        "20. NO METADATA: Do not include any parentheses, tags, or technical notes in your output."
+                        "21. NO REASONING: Do not explain why you are asking the question. Just ask it."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
