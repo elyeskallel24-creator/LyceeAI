@@ -8,6 +8,9 @@ from io import BytesIO
 import pypdf
 import uuid
 import json
+import re
+from datetime import datetime
+import pytz
 
 # --- PAGE CONFIG --- 
 st.set_page_config(page_title="LyceeAI", page_icon="🎓", layout="wide") 
@@ -21,6 +24,14 @@ supabase = create_client(url, key)
 @st.cache_resource 
 def load_embed(): 
     return SentenceTransformer('all-MiniLM-L6-v2') 
+
+def diagnostic_survey():
+    # --- GET LIVE TIME ---
+    now = datetime.now(pytz.timezone('Africa/Tunis'))
+    today_str = now.strftime("%d %B %Y")
+    current_time_str = now.strftime("%H:%M")
+
+    st.markdown("<h2 style='text-align: center;'>🔎 35 sou2el bch na3mloulk plan mezyen kima enti thebou</h2>", unsafe_allow_html=True)
 
 def ask_openrouter(messages): 
     endpoint = "https://openrouter.ai/api/v1/chat/completions" 
@@ -115,6 +126,17 @@ def diagnostic_survey():
             - DOMAIN 5: Motivation/Psychology (Why do they want this? Fear or Ambition?)
             """
 
+            # Calculate days remaining if Step 3 was completed
+            days_remaining_info = ""
+            if len(st.session_state.diag_answers) > 0:
+                # Find the deadline in the answers
+                deadline_entry = next((item for item in st.session_state.diag_answers if item["q"] == "Deadline"), None)
+                if deadline_entry:
+                    target_date = datetime.strptime(deadline_entry["a"], "%Y-%m-%d").date()
+                    today_date = now.date()
+                    delta = (target_date - today_date).days
+                    days_remaining_info = f"CRITICAL CONTEXT: The user's deadline is {deadline_entry['a']}. Today is {today_str}. There are exactly {delta} days remaining."
+            
             context_prompt = [
                 {
                     "role": "system", 
@@ -153,6 +175,12 @@ def diagnostic_survey():
                         "19. NO INTERNAL LABELS: You are STRICTLY FORBIDDEN from mentioning Domain names, Domain numbers, or category titles (e.g., No '(Domain 3)', No 'Subject Hierarchy')."
                         "20. NO METADATA: Do not include any parentheses, tags, or technical notes in your output."
                         "21. NO REASONING: Do not explain why you are asking the question. Just ask it."
+                        "22. OUTPUT FORMAT: Your response must be ONLY the question text."
+                        "23. STRIKTLY FORBIDDEN: Do not include labels like '(Domain X)', 'Domain:', or 'Environment & Friction', If you mention a domain name or number, the system will fail. "
+                        "24. NO BRACKETS/PARENTHESES: Do not use any text inside ( ) or [ ]."
+                        "25. MISSION: You are an architect, not a reporter. Do not report which domain you are using. Just ask the user the question."
+                        "26. TIME AWARENESS: You know exactly how many days are left until the exam. Use this to create urgency. If they have very little time, ask harder questions about their priorities."
+                        "27. PLAN LENGTH: The total length of the revision plan is the number of days between TODAY and their DEADLINE. Never suggest a plan longer than the time available."
                         f"\n--- AUDIT LOG (DO NOT REPEAT THESE) ---\n{audit_log}"
                     )
                 },
@@ -168,6 +196,7 @@ def diagnostic_survey():
                 if raw_q and len(raw_q.strip()) > 15:
                     clean_q = raw_q.replace("Question:", "").replace("Audit:", "").strip()
                     # Double-check for word-for-word repetition in past questions
+                    clean_q = re.sub(r'\(.*?\)', '', clean_q).strip()
                     past_questions = [ans['q'] for ans in st.session_state.diag_answers]
                     if clean_q in past_questions:
                         st.rerun() # Force the AI to try again if it repeated a question exactly
@@ -186,12 +215,16 @@ def diagnostic_survey():
 
             if st.button("Suivant ➡️", use_container_width=True):
                 if user_ans.strip():
-                    st.session_state.diag_answers.append({
-                        "q": st.session_state[f"q_{st.session_state.diag_step}"],
-                        "a": user_ans
-                    })
-                    st.session_state.diag_step += 1
-                    st.rerun()
+                    # --- ADD THIS LOCAL CHECK ---
+                    if len(user_ans) > 10 and " " not in user_ans:
+                        st.warning("Koun jiddi fi klemek besh el plan mte’ek yji mrigel.")
+                    else:
+                        st.session_state.diag_answers.append({
+                            "q": st.session_state[f"q_{st.session_state.diag_step}"],
+                            "a": user_ans
+                        })
+                        st.session_state.diag_step += 1
+                        st.rerun()
                 else:
                     st.warning("Lezmek tjeweb bch tet3ada liba3dou")
 # --- ONBOARDING --- 
