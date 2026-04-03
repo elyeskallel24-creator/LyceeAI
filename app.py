@@ -119,7 +119,7 @@ def diagnostic_survey():
                 {
                     "role": "system", 
                     "content": (
-                        f"You are the Elite Academic Architect for LyceeAI. "
+                        f"You are the Elite Academic Architect, the 'brain' of LyceeAI. "
                         f"User Level: {st.session_state.temp_user_profile_data['level']} | Section: {st.session_state.temp_user_profile_data['section']}. "
                         f"Language: {st.session_state.user_lang}. {lang_instruction.get(st.session_state.user_lang)} "
                         "\n--- MISSION ---"
